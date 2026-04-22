@@ -24,10 +24,30 @@
   </header>
 
   <main class="main">
-    <ul class="todo-list" id="todoList"></ul>
+
+    <button class="back-btn hidden" id="backBtn">&#8249; Dashboard</button>
+
+    <!-- Dashboard -->
+    <div id="dashboardView" class="view view--active">
+      <div class="dashboard-grid" id="dashboardGrid"></div>
+    </div>
+
+    <!-- TODO -->
+    <div id="todoView" class="view">
+      <ul class="todo-list" id="todoList"></ul>
+    </div>
+
+    <!-- Note (placeholder) -->
+    <div id="notesView" class="view">
+      <div class="notes-placeholder">
+        <div class="notes-ph-icon" id="notesPHIcon"></div>
+        <p>Funzionalità in arrivo</p>
+      </div>
+    </div>
+
   </main>
 
-  <button class="fab" id="addTodo" aria-label="Aggiungi TODO">+</button>
+  <button class="fab hidden" id="addTodo" aria-label="Aggiungi TODO">+</button>
 
   <!-- Modal: Note Editor -->
   <div class="modal-overlay hidden" id="noteModal">
@@ -53,6 +73,7 @@
   <script src="js/actionsheet.js"></script>
   <script src="js/todos.js"></script>
   <script src="js/modals.js"></script>
+  <script src="js/dashboard.js"></script>
   <script src="js/app.js"></script>
   <script src="js/reminder.js"></script>
 </body>

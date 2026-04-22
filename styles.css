@@ -28,6 +28,9 @@ input, textarea {
   --card-bg: #E3F2FD;
   --swatch-color: transparent;
   --swatch-bg: transparent;
+  --tile-accent: var(--accent-3);
+  --tile-accent-light: #81D4FA;
+  --tile-bg: #E1F5FE;
 }
 
 html, body {
@@ -138,12 +141,8 @@ body {
   border-color: rgba(255,255,255,0.7);
 }
 
-.today-chip.hidden { display: none; }
+.today-chip.hidden { visibility: hidden; pointer-events: none; }
 
-.today-chip--active {
-  background: rgba(255,255,255,0.36);
-  border-color: rgba(255,255,255,0.8);
-}
 
 .nav-btn {
   background: none;
@@ -178,6 +177,140 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
+}
+
+/* ── View system ── */
+.view { display: none; flex: 1; flex-direction: column; }
+.view--active { display: flex; }
+
+/* ── Back button ── */
+.back-btn {
+  align-self: flex-start;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 12px;
+  color: var(--white);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  padding: 8px 20px;
+  margin-bottom: 24px;
+  transition: background 0.12s;
+  flex-shrink: 0;
+}
+.back-btn:hover { background: rgba(255,255,255,0.26); }
+.back-btn.hidden { display: none; }
+
+/* ── Dashboard ── */
+#dashboardView {
+  justify-content: center;
+  align-items: center;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 260px));
+  gap: 24px;
+  justify-content: center;
+  width: 100%;
+}
+
+.dash-tile {
+  background: rgba(255,255,255,0.13);
+  border: 1px solid rgba(255,255,255,0.28);
+  border-radius: 24px;
+  box-shadow:
+    0 4px 20px rgba(0,0,0,0.15),
+    inset 0 1px 0 rgba(255,255,255,0.22);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 24px 36px;
+  text-align: center;
+  transition: box-shadow 0.15s, transform 0.15s, background 0.15s;
+  user-select: none;
+}
+
+.dash-tile-icon,
+.dash-tile-label,
+.dash-tile-sub {
+  pointer-events: none;
+}
+
+.dash-tile:hover {
+  background: rgba(255,255,255,0.2);
+  box-shadow:
+    0 10px 32px rgba(0,0,0,0.2),
+    inset 0 1px 0 rgba(255,255,255,0.3);
+  transform: translateY(-2px);
+}
+
+.dash-tile.dragging {
+  opacity: 0.4;
+  transform: scale(1.04);
+  cursor: grabbing;
+}
+
+.dash-tile.drag-over {
+  box-shadow: 0 0 0 3px var(--tile-accent), 0 8px 28px rgba(0,0,0,0.18);
+  transform: scale(1.02);
+}
+
+.dash-tile-icon {
+  color: var(--tile-accent-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dash-tile-icon svg {
+  width: 64px;
+  height: 64px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.5;
+}
+
+.dash-tile-label {
+  color: var(--tile-accent-light);
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.dash-tile-sub {
+  color: rgba(255,255,255,0.65);
+  font-size: 0.82rem;
+  font-weight: 400;
+}
+
+/* ── Notes placeholder ── */
+.notes-placeholder {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: rgba(255,255,255,0.35);
+}
+
+.notes-ph-icon svg {
+  width: 72px;
+  height: 72px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.4;
+}
+
+.notes-placeholder p {
+  font-size: 1.1rem;
+  font-weight: 300;
+  letter-spacing: 0.03em;
 }
 
 /* ── TODO List ── */
@@ -491,6 +624,8 @@ body {
 .accent-5 { background: var(--accent-5); }
 
 /* ── FAB ── */
+.fab.hidden { display: none; }
+
 .fab {
   position: fixed;
   bottom: 36px;
