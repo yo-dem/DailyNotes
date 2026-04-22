@@ -140,6 +140,11 @@ body {
 
 .today-chip.hidden { display: none; }
 
+.today-chip--active {
+  background: rgba(255,255,255,0.36);
+  border-color: rgba(255,255,255,0.8);
+}
+
 .nav-btn {
   background: none;
   border: 2px solid rgba(255,255,255,0.6);

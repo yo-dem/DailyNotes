@@ -15,7 +15,8 @@ function renderHeader() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const isToday = state.currentDate.getTime() === today.getTime();
-  $todayChip.classList.toggle('hidden', isToday);
+  $todayChip.classList.remove('hidden');
+  $todayChip.classList.toggle('today-chip--active', isToday);
 }
 
 function renderAll() {
