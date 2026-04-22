@@ -305,29 +305,225 @@ body {
   font-weight: 400;
 }
 
-/* ── Notes placeholder ── */
-.notes-placeholder {
+/* ── Notes full-width layout ── */
+body.notes-active .main {
+  max-width: 100%;
+  padding-left: 0;
+  padding-right: 0;
+  padding-top: 0;
+}
+
+/* ── Notes canvas ── */
+#notesView {
+  overflow: hidden;
+  position: relative; /* for zoom-bar absolute positioning */
+}
+
+.notes-canvas-wrap {
   flex: 1;
+  overflow: hidden;
+  position: relative;
+  cursor: grab;
+  touch-action: none;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.14) 1.5px, transparent 1.5px);
+  background-size: 26px 26px;
+}
+.notes-canvas-wrap.panning { cursor: grabbing; }
+
+.notes-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  will-change: transform;
+  transform-origin: 0 0;
+}
+
+/* ── Zoom bar ── */
+.notes-zoom-bar {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.12);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 22px;
+  padding: 10px 8px;
+  z-index: 100;
+  user-select: none;
+  pointer-events: all;
+}
+
+.nzb-btn {
+  width: 34px;
+  height: 34px;
+  background: rgba(255,255,255,0.16);
+  border: 1px solid rgba(255,255,255,0.28);
+  border-radius: 50%;
+  color: var(--white);
+  font-size: 1.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  gap: 16px;
-  color: rgba(255,255,255,0.35);
+  transition: background 0.1s;
+  font-family: inherit;
+  line-height: 1;
+}
+.nzb-btn:hover { background: rgba(255,255,255,0.3); }
+
+.nzb-pct {
+  color: var(--white);
+  font-size: 0.68rem;
+  font-weight: 600;
+  opacity: 0.8;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
 }
 
-.notes-ph-icon svg {
-  width: 72px;
-  height: 72px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 1.4;
+/* ── Note card ── */
+.note-card {
+  position: absolute;
+  background: var(--nc-bg, #EDE7F6);
+  border-radius: 14px;
+  border-top: 4px solid var(--nc-accent, #7B1FA2);
+  box-shadow: 0 4px 18px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.08);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: box-shadow 0.15s;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-.notes-placeholder p {
-  font-size: 1.1rem;
-  font-weight: 300;
-  letter-spacing: 0.03em;
+.note-card--drag {
+  box-shadow: 0 18px 52px rgba(0,0,0,0.32);
+  z-index: 200;
+}
+
+.nc-top {
+  display: flex;
+  align-items: center;
+  padding: 8px 6px 4px 10px;
+  gap: 4px;
+  cursor: grab;
+  flex-shrink: 0;
+}
+.nc-top:active { cursor: grabbing; }
+
+.nc-title {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  cursor: text;
+  min-width: 0;
+  user-select: text;
+  -webkit-user-select: text;
+  touch-action: auto;
+  padding: 2px 2px;
+}
+
+.nc-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(0,0,0,0.18);
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  transition: transform 0.12s;
+}
+.nc-color:hover { transform: scale(1.2); }
+
+.nc-del {
+  width: 26px;
+  height: 26px;
+  background: none;
+  border: none;
+  color: rgba(0,0,0,0.3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  padding: 0;
+  flex-shrink: 0;
+  transition: color 0.1s, background 0.1s;
+}
+.nc-del:hover { background: rgba(0,0,0,0.08); color: rgba(0,0,0,0.65); }
+.nc-del svg { width: 13px; height: 13px; }
+
+.nc-body {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 0.8rem;
+  color: var(--text-dark);
+  resize: none;
+  padding: 2px 12px 10px;
+  line-height: 1.55;
+  user-select: text;
+  -webkit-user-select: text;
+  touch-action: pan-y;
+  overflow-y: auto;
+}
+
+.nc-grip {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  cursor: se-resize;
+  touch-action: none;
+  border-bottom-right-radius: 14px;
+  opacity: 0.45;
+  background-image: radial-gradient(circle, var(--nc-accent, #7B1FA2) 1.5px, transparent 1.5px);
+  background-size: 6px 6px;
+  background-position: 2px 2px;
+}
+
+/* ── Note color picker ── */
+.nc-picker {
+  position: fixed;
+  z-index: 2000;
+  background: rgba(24,24,40,0.9);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: 14px;
+  padding: 10px 12px;
+  display: flex;
+  gap: 10px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+.nc-picker-sw {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2.5px solid transparent;
+  cursor: pointer;
+  transition: transform 0.12s;
+}
+.nc-picker-sw:hover { transform: scale(1.15); }
+.nc-picker-sw.active {
+  border-color: rgba(255,255,255,0.85);
+  transform: scale(1.1);
 }
 
 /* ── TODO List ── */

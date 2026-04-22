@@ -34,10 +34,12 @@ function navigateTo(view) {
 
   const onDash = view === 'dashboard';
   document.getElementById('bottomDock').classList.toggle('hidden', onDash);
-  document.getElementById('addTodo').classList.toggle('hidden', view !== 'todo');
+  document.getElementById('addTodo').classList.toggle('hidden', view !== 'todo' && view !== 'notes');
+  document.body.classList.toggle('notes-active', view === 'notes');
 
   if (view === 'dashboard') renderDashboard();
   if (view === 'todo')      renderTodos();
+  if (view === 'notes')     renderNotes();
 }
 
 function renderAll() {
@@ -45,6 +47,7 @@ function renderAll() {
   const v = _activeViewId();
   if (v === 'dashboard') renderDashboard();
   if (v === 'todo')      renderTodos();
+  if (v === 'notes')     renderNotes();
 }
 
 // ── Navigation ─────────────────────────────────────────
@@ -70,7 +73,11 @@ $todayChip.addEventListener('click', e => {
 document.getElementById('backBtn').addEventListener('click', () => navigateTo('dashboard'));
 
 // ── FAB ────────────────────────────────────────────────
-document.getElementById('addTodo').addEventListener('click', addTodo);
+document.getElementById('addTodo').addEventListener('click', () => {
+  const v = _activeViewId();
+  if (v === 'todo')  addTodo();
+  if (v === 'notes') addNote();
+});
 
 // ── Animated day change (shared by swipe + wheel + arrows) ─
 let _dayChangeBusy = false;
@@ -107,6 +114,7 @@ document.addEventListener('touchstart', e => {
 }, { passive: true });
 
 document.addEventListener('touchend', e => {
+  if (_activeViewId() === 'notes') return;
   const dx = e.changedTouches[0].clientX - _swipeX;
   const dy = e.changedTouches[0].clientY - _swipeY;
   if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
@@ -120,6 +128,7 @@ let _wheelCooling = false;
 let _wheelCoolPrev = 0; // last deltaX seen during cooling (to detect re-acceleration)
 
 document.addEventListener('wheel', e => {
+  if (_activeViewId() === 'notes') return;
   if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) * 0.8) return;
   e.preventDefault();
   if (_dayChangeBusy) return;
@@ -185,6 +194,5 @@ document.addEventListener('keydown', e => {
 window.addEventListener('resize', renderHeader);
 
 // ── Boot ───────────────────────────────────────────────
-document.getElementById('notesPHIcon').innerHTML = SVG.tileNotes;
 renderHeader();
 navigateTo('dashboard');

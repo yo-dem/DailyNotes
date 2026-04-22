@@ -35,11 +35,15 @@
       <ul class="todo-list" id="todoList"></ul>
     </div>
 
-    <!-- Note (placeholder) -->
+    <!-- Note -->
     <div id="notesView" class="view">
-      <div class="notes-placeholder">
-        <div class="notes-ph-icon" id="notesPHIcon"></div>
-        <p>Funzionalità in arrivo</p>
+      <div class="notes-canvas-wrap" id="notesCanvasWrap">
+        <div class="notes-canvas" id="notesCanvas"></div>
+      </div>
+      <div class="notes-zoom-bar">
+        <button class="nzb-btn" id="nzbPlus">+</button>
+        <span class="nzb-pct" id="nzbPct">100%</span>
+        <button class="nzb-btn" id="nzbMinus">&#8722;</button>
       </div>
     </div>
 
@@ -77,6 +81,7 @@
   <script src="js/todos.js"></script>
   <script src="js/modals.js"></script>
   <script src="js/dashboard.js"></script>
+  <script src="js/notes.js"></script>
   <script src="js/app.js"></script>
   <script src="js/reminder.js"></script>
 </body>
