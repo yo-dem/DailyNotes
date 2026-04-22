@@ -24,6 +24,10 @@ input, textarea {
   --accent-4: #C2185B;
   --accent-5: #F57F17;
   --shadow: 0 1px 4px rgba(0,0,0,0.18);
+  /* set dynamically via JS; declared here to suppress linter warnings */
+  --card-bg: #E3F2FD;
+  --swatch-color: transparent;
+  --swatch-bg: transparent;
 }
 
 html, body {
