@@ -25,8 +25,6 @@
 
   <main class="main">
 
-    <button class="back-btn hidden" id="backBtn">&#8249; Dashboard</button>
-
     <!-- Dashboard -->
     <div id="dashboardView" class="view view--active">
       <div class="dashboard-grid" id="dashboardGrid"></div>
@@ -48,6 +46,11 @@
   </main>
 
   <button class="fab hidden" id="addTodo" aria-label="Aggiungi TODO">+</button>
+
+  <!-- Bottom dock -->
+  <div class="bottom-dock hidden" id="bottomDock">
+    <button class="back-btn" id="backBtn">Dashboard</button>
+  </div>
 
   <!-- Modal: Note Editor -->
   <div class="modal-overlay hidden" id="noteModal">

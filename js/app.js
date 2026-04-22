@@ -8,7 +8,12 @@ const $todayChip  = document.getElementById('goToday');
 
 // ── Render ─────────────────────────────────────────────
 function renderHeader() {
-  $dateLabel.textContent  = formatDate(state.currentDate);
+  const narrow = window.innerWidth < 360;
+  if (narrow) {
+    $dateLabel.innerHTML = `${formatDateShort(state.currentDate)}<span class="date-day-name">${DAYS_IT[state.currentDate.getDay()]}</span>`;
+  } else {
+    $dateLabel.textContent = formatDate(state.currentDate);
+  }
   $waterDay.textContent   = state.currentDate.getDate();
   $waterMonth.textContent = MONTHS_IT[state.currentDate.getMonth()];
 
@@ -28,7 +33,7 @@ function navigateTo(view) {
   document.getElementById(`${view}View`).classList.add('view--active');
 
   const onDash = view === 'dashboard';
-  document.getElementById('backBtn').classList.toggle('hidden', onDash);
+  document.getElementById('bottomDock').classList.toggle('hidden', onDash);
   document.getElementById('addTodo').classList.toggle('hidden', view !== 'todo');
 
   if (view === 'dashboard') renderDashboard();
@@ -109,35 +114,59 @@ document.addEventListener('touchend', e => {
 }, { passive: true });
 
 // ── Trackpad / wheel horizontal swipe ──────────────────
-let _wheelAccX  = 0;
-let _wheelTimer = null;
+let _wheelAccX    = 0;
+let _wheelTimer   = null;
+let _wheelCooling = false;
+let _wheelCoolPrev = 0; // last deltaX seen during cooling (to detect re-acceleration)
 
 document.addEventListener('wheel', e => {
   if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) * 0.8) return;
-  if (_dayChangeBusy) { e.preventDefault(); return; }
   e.preventDefault();
+  if (_dayChangeBusy) return;
+
+  // After a day change, swallow momentum until deltaX starts growing again
+  // (momentum = decreasing; new deliberate swipe = accelerating)
+  if (_wheelCooling) {
+    const growing  = Math.abs(e.deltaX) >= Math.abs(_wheelCoolPrev) + 1;
+    const reversed = Math.sign(e.deltaX) !== Math.sign(_wheelCoolPrev) && Math.abs(e.deltaX) > 5;
+    if (growing || reversed) {
+      _wheelCooling = false;
+      _wheelAccX    = 0;
+      // fall through and treat this event as the start of a new gesture
+    } else {
+      _wheelCoolPrev = e.deltaX;
+      return;
+    }
+  }
 
   _wheelAccX += e.deltaX;
 
   const $m    = document.querySelector('.main');
-  const shift = Math.sign(_wheelAccX) * Math.min(Math.abs(_wheelAccX) * 0.35, 100);
+  const shift = Math.sign(_wheelAccX) * Math.min(Math.abs(_wheelAccX) * 0.5, 100);
   $m.style.transition = 'none';
   $m.style.transform  = `translateX(${-shift}px)`;
-  $m.style.opacity    = `${1 - Math.abs(shift) / 340}`;
+  $m.style.opacity    = `${1 - Math.abs(shift) / 320}`;
 
+  // commit as soon as threshold is reached — no waiting for scroll end
+  if (Math.abs(_wheelAccX) > 60) {
+    const dir = _wheelAccX > 0 ? 1 : -1;
+    _wheelAccX     = 0;
+    _wheelCooling  = true;
+    _wheelCoolPrev = e.deltaX;
+    clearTimeout(_wheelTimer);
+    _changeDayAnimated(dir);
+    return;
+  }
+
+  // snap back if scroll stops below threshold
   clearTimeout(_wheelTimer);
   _wheelTimer = setTimeout(() => {
-    const dir = _wheelAccX > 85 ? 1 : _wheelAccX < -85 ? -1 : 0;
     _wheelAccX = 0;
-    if (dir !== 0) {
-      _changeDayAnimated(dir);
-    } else {
-      $m.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
-      $m.style.transform  = '';
-      $m.style.opacity    = '';
-      setTimeout(() => { $m.style.transition = ''; }, 200);
-    }
-  }, 80);
+    $m.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+    $m.style.transform  = '';
+    $m.style.opacity    = '';
+    setTimeout(() => { $m.style.transition = ''; }, 200);
+  }, 160);
 }, { passive: false });
 
 // ── Keyboard shortcuts ─────────────────────────────────
@@ -151,6 +180,9 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowLeft'  && !isInputFocused()) _changeDayAnimated(-1);
   if (e.key === 'ArrowRight' && !isInputFocused()) _changeDayAnimated(+1);
 });
+
+// ── Responsive header on resize ────────────────────────
+window.addEventListener('resize', renderHeader);
 
 // ── Boot ───────────────────────────────────────────────
 document.getElementById('notesPHIcon').innerHTML = SVG.tileNotes;

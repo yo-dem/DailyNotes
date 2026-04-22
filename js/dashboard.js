@@ -26,7 +26,7 @@ function _saveTileOrder(order) {
   localStorage.setItem(TILES_KEY, JSON.stringify(order));
 }
 
-let _tileDragSrc = null;
+// ── Render ─────────────────────────────────────────────
 
 function renderDashboard() {
   const $grid = document.getElementById('dashboardGrid');
@@ -45,7 +45,6 @@ function renderDashboard() {
     tile.style.setProperty('--tile-accent',       ACCENT_COLORS[def.accent]);
     tile.style.setProperty('--tile-accent-light', ACCENT_LIGHT[def.accent]);
     tile.style.setProperty('--tile-bg',           PASTEL_BG[def.accent]);
-    tile.draggable = true;
 
     tile.innerHTML = `
       <div class="dash-tile-icon">${SVG[def.icon]}</div>
@@ -53,48 +52,158 @@ function renderDashboard() {
       <div class="dash-tile-sub">${def.sub()}</div>
     `;
 
-    tile.addEventListener('click',     () => navigateTo(id));
-    tile.addEventListener('dragstart', _tileDragStart);
-    tile.addEventListener('dragover',  _tileDragOver);
-    tile.addEventListener('drop',      _tileDrop);
-    tile.addEventListener('dragend',   _tileDragEnd);
-    tile.addEventListener('dragleave', e => {
-      if (!e.currentTarget.contains(e.relatedTarget)) {
-        e.currentTarget.classList.remove('drag-over');
-      }
-    });
-
+    tile.addEventListener('pointerdown', _onPointerDown);
     $grid.appendChild(tile);
   });
 }
 
-function _tileDragStart(e) {
-  _tileDragSrc = parseInt(this.dataset.tileIdx, 10);
-  this.classList.add('dragging');
-  e.dataTransfer.effectAllowed = 'move';
+// ── Pointer drag state ─────────────────────────────────
+
+let _drag = null;
+
+function _onPointerDown(e) {
+  if (e.button !== 0) return;
+  e.preventDefault();
+
+  const tile = this;
+  tile.setPointerCapture(e.pointerId);
+
+  const $grid = document.getElementById('dashboardGrid');
+  const tiles = [...$grid.querySelectorAll('.dash-tile')];
+
+  // Reset any lingering transforms and capture original slot rects
+  tiles.forEach(t => { t.style.transition = 'none'; t.style.transform = ''; });
+  const slotRects = tiles.map(t => {
+    const r = t.getBoundingClientRect();
+    return { left: r.left, top: r.top, width: r.width, height: r.height };
+  });
+
+  const srcIdx = parseInt(tile.dataset.tileIdx, 10);
+  const sr     = slotRects[srcIdx];
+
+  // Floating clone that follows the pointer
+  const clone = tile.cloneNode(true);
+  Object.assign(clone.style, {
+    position:      'fixed',
+    left:          `${sr.left}px`,
+    top:           `${sr.top}px`,
+    width:         `${sr.width}px`,
+    height:        `${sr.height}px`,
+    margin:        '0',
+    zIndex:        '2000',
+    pointerEvents: 'none',
+    borderRadius:  '24px',
+    willChange:    'left, top',
+    transition:    'transform 0.15s ease, box-shadow 0.15s ease',
+    transform:     'scale(1.07)',
+    boxShadow:     '0 28px 64px rgba(0,0,0,0.45)',
+  });
+  document.body.appendChild(clone);
+
+  tile.classList.add('dash-tile--ghost');
+
+  _drag = {
+    tile,
+    clone,
+    srcIdx,
+    slotRects,
+    nearestIdx:  srcIdx,
+    currentOrder: [..._loadTileOrder()],
+    ox: e.clientX - sr.left,
+    oy: e.clientY - sr.top,
+    moved: false,
+  };
+
+  tile.addEventListener('pointermove',   _onPointerMove);
+  tile.addEventListener('pointerup',     _onPointerUp);
+  tile.addEventListener('pointercancel', _onPointerUp);
 }
 
-function _tileDragOver(e) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-  document.querySelectorAll('.dash-tile').forEach(t => t.classList.remove('drag-over'));
-  if (parseInt(this.dataset.tileIdx, 10) !== _tileDragSrc) {
-    this.classList.add('drag-over');
+function _onPointerMove(e) {
+  if (!_drag) return;
+
+  const { clone, slotRects, srcIdx, ox, oy, tile } = _drag;
+
+  const x = e.clientX - ox;
+  const y = e.clientY - oy;
+
+  // Only start "drag mode" after 8px of movement
+  if (!_drag.moved) {
+    const dx = e.clientX - (slotRects[srcIdx].left + ox);
+    const dy = e.clientY - (slotRects[srcIdx].top  + oy);
+    if (Math.hypot(dx, dy) < 8) return;
+    _drag.moved = true;
   }
+
+  clone.style.left = `${x}px`;
+  clone.style.top  = `${y}px`;
+
+  // Center of the floating tile
+  const cx = x + slotRects[srcIdx].width  / 2;
+  const cy = y + slotRects[srcIdx].height / 2;
+
+  // Find the nearest original slot
+  let nearestIdx = srcIdx;
+  let minDist    = Infinity;
+  slotRects.forEach((r, i) => {
+    const d = Math.hypot(cx - (r.left + r.width / 2), cy - (r.top + r.height / 2));
+    if (d < minDist) { minDist = d; nearestIdx = i; }
+  });
+
+  if (nearestIdx === _drag.nearestIdx) return;
+  _drag.nearestIdx = nearestIdx;
+
+  // Recompute conceptual order
+  const base = _loadTileOrder();
+  const newOrder = [...base];
+  const [moved] = newOrder.splice(srcIdx, 1);
+  newOrder.splice(nearestIdx, 0, moved);
+  _drag.currentOrder = newOrder;
+
+  // Translate other tiles to their new slots
+  const $grid = document.getElementById('dashboardGrid');
+  [...$grid.querySelectorAll('.dash-tile')].forEach((t, domIdx) => {
+    if (t === tile) return;
+    const targetIdx = newOrder.indexOf(t.dataset.tileId);
+    const tr = slotRects[targetIdx];
+    const cr = slotRects[domIdx];
+    t.style.transition = 'transform 0.24s cubic-bezier(0.25,0.46,0.45,0.94)';
+    t.style.transform  = `translate(${tr.left - cr.left}px, ${tr.top - cr.top}px)`;
+  });
 }
 
-function _tileDrop(e) {
-  e.preventDefault();
-  const dest = parseInt(this.dataset.tileIdx, 10);
-  if (_tileDragSrc === null || _tileDragSrc === dest) return;
-  const order = _loadTileOrder();
-  const [moved] = order.splice(_tileDragSrc, 1);
-  order.splice(dest, 0, moved);
-  _saveTileOrder(order);
-  renderDashboard();
-}
+function _onPointerUp(e) {
+  if (!_drag) return;
 
-function _tileDragEnd() {
-  document.querySelectorAll('.dash-tile').forEach(t => t.classList.remove('dragging', 'drag-over'));
-  _tileDragSrc = null;
+  const { tile, clone, currentOrder, slotRects, srcIdx, moved } = _drag;
+
+  tile.removeEventListener('pointermove',   _onPointerMove);
+  tile.removeEventListener('pointerup',     _onPointerUp);
+  tile.removeEventListener('pointercancel', _onPointerUp);
+
+  if (!moved) {
+    // Tap: clean up and navigate
+    clone.remove();
+    tile.classList.remove('dash-tile--ghost');
+    _drag = null;
+    navigateTo(tile.dataset.tileId);
+    return;
+  }
+
+  // Animate clone landing on its final slot
+  const finalIdx = currentOrder.indexOf(tile.dataset.tileId);
+  const fr       = slotRects[finalIdx];
+
+  clone.style.transition = 'left 0.22s ease, top 0.22s ease, transform 0.22s ease, box-shadow 0.22s ease';
+  clone.style.left       = `${fr.left}px`;
+  clone.style.top        = `${fr.top}px`;
+  clone.style.transform  = 'scale(1)';
+  clone.style.boxShadow  = '0 4px 20px rgba(0,0,0,0.15)';
+
+  setTimeout(() => {
+    clone.remove();
+    _drag = null;
+    _saveTileOrder(currentOrder);
+    renderDashboard();
+  }, 220);
 }

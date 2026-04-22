@@ -103,7 +103,7 @@ body {
 
 .current-date {
   text-align: center;
-  font-size: clamp(1.8rem, 4vw, 3.2rem);
+  font-size: clamp(26px, 4vw, 4rem);
   font-weight: 300;
   letter-spacing: 0.01em;
   cursor: pointer;
@@ -114,10 +114,17 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   width: 100%;
+  margin-top: 40px;
 }
 
-.current-date:hover {
-  border-bottom-color: rgba(255,255,255,0.5);
+.date-day-name {
+  display: block;
+  font-size: 0.48em;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  opacity: 0.75;
+  margin-top: 2px;
+  text-transform: uppercase;
 }
 
 /* ── Today chip ── */
@@ -134,6 +141,7 @@ body {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   transition: background 0.12s, border-color 0.12s;
+  width: 180px;
 }
 
 .today-chip:hover {
@@ -149,8 +157,8 @@ body {
   border: 2px solid rgba(255,255,255,0.6);
   border-radius: 50%;
   color: var(--white);
-  width: 52px;
-  height: 52px;
+  width: 70px;
+  height: 70px;
   font-size: 1.4rem;
   cursor: pointer;
   flex-shrink: 0;
@@ -183,24 +191,38 @@ body {
 .view { display: none; flex: 1; flex-direction: column; }
 .view--active { display: flex; }
 
+/* ── Bottom dock ── */
+.bottom-dock {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px 24px max(16px, env(safe-area-inset-bottom));
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255,255,255,0.12);
+}
+.bottom-dock.hidden { display: none; }
+
 /* ── Back button ── */
 .back-btn {
-  align-self: flex-start;
-  background: rgba(255,255,255,0.15);
-  border: 1px solid rgba(255,255,255,0.3);
-  border-radius: 12px;
+  background: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.32);
+  border-radius: 14px;
   color: var(--white);
   cursor: pointer;
   font-family: inherit;
-  font-size: 0.92rem;
+  font-size: 1rem;
   font-weight: 600;
-  padding: 8px 20px;
-  margin-bottom: 24px;
+  padding: 10px 36px;
   transition: background 0.12s;
-  flex-shrink: 0;
 }
-.back-btn:hover { background: rgba(255,255,255,0.26); }
-.back-btn.hidden { display: none; }
+.back-btn:hover { background: rgba(255,255,255,0.28); }
 
 /* ── Dashboard ── */
 #dashboardView {
@@ -233,6 +255,7 @@ body {
   text-align: center;
   transition: box-shadow 0.15s, transform 0.15s, background 0.15s;
   user-select: none;
+  touch-action: none;
 }
 
 .dash-tile-icon,
@@ -249,15 +272,9 @@ body {
   transform: translateY(-2px);
 }
 
-.dash-tile.dragging {
-  opacity: 0.4;
-  transform: scale(1.04);
-  cursor: grabbing;
-}
-
-.dash-tile.drag-over {
-  box-shadow: 0 0 0 3px var(--tile-accent), 0 8px 28px rgba(0,0,0,0.18);
-  transform: scale(1.02);
+.dash-tile--ghost {
+  opacity: 0 !important;
+  pointer-events: none;
 }
 
 .dash-tile-icon {
@@ -628,7 +645,7 @@ body {
 
 .fab {
   position: fixed;
-  bottom: 36px;
+  bottom: calc(80px + 24px);
   right: 36px;
   width: 60px;
   height: 60px;
@@ -784,7 +801,6 @@ body {
   transform: translateX(-50%) translateY(calc(-50% - 14px));
   width: min(580px, 96vw);
   max-height: calc(100vh - 40px);
-  overflow-y: auto;
   background: rgba(218, 224, 236, 0.76);
   backdrop-filter: blur(36px) saturate(210%);
   -webkit-backdrop-filter: blur(36px) saturate(210%);
@@ -1364,7 +1380,7 @@ body {
   .header { padding: 20px 16px 12px; }
   .main { padding: 8px 12px 120px; }
   .nav-btn { width: 40px; height: 40px; font-size: 1.1rem; }
-  .fab { bottom: 24px; right: 20px; }
+  .fab { bottom: calc(80px + 16px); right: 20px; }
   .modal { padding: 24px 20px 20px; }
   .modal-note { width: 92vw; }
   .cal-day { width: 42px; height: 42px; font-size: 1rem; }
@@ -1373,13 +1389,13 @@ body {
 
 /* ── Responsive height: calendar shrinks on short viewports ── */
 @media (max-height: 680px) {
-  .cal-day { width: 50px; height: 50px; font-size: 1rem; }
+  .cal-day { width: 50px; height: 50px; font-size: 0.9rem; }
   .cal-header { margin-bottom: 10px; }
   .calendar-picker { padding: 14px 16px 12px; }
 }
 
 @media (max-height: 520px) {
-  .cal-day { width: 40px; height: 40px; font-size: 0.9rem; }
+  .cal-day { width: 40px; height: 40px; font-size: 0.7rem; }
   .cal-nav { width: 36px; height: 36px; }
   .cal-month-year { font-size: 1.1rem; }
   .cal-today-btn { padding: 5px 0; }
