@@ -135,12 +135,17 @@ function addTodo() {
     done:    false,
     order:   0
   };
-  todos.unshift(newTodo);
+  todos.push(newTodo);
   setTodos(todos);
   renderTodos();
 
-  const firstTitle = document.querySelector('.card-title');
-  if (firstTitle) { firstTitle.focus(); firstTitle.select(); }
+  const cards = document.querySelectorAll('.todo-card');
+  const lastCard = cards[cards.length - 1];
+  if (lastCard) {
+    lastCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    const titleInput = lastCard.querySelector('.card-title');
+    if (titleInput) { titleInput.focus(); titleInput.select(); }
+  }
 }
 
 function updateField(id, field, value) {

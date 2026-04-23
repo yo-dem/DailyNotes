@@ -33,9 +33,12 @@ function navigateTo(view) {
   document.getElementById(`${view}View`).classList.add('view--active');
 
   const onDash = view === 'dashboard';
+  document.getElementById('prevDay').classList.toggle('hidden', !onDash);
+  document.getElementById('nextDay').classList.toggle('hidden', !onDash);
   document.getElementById('bottomDock').classList.toggle('hidden', onDash);
   document.getElementById('addTodo').classList.toggle('hidden', view !== 'todo' && view !== 'notes');
   document.body.classList.toggle('notes-active', view === 'notes');
+  document.body.classList.toggle('todo-active',  view === 'todo');
 
   if (view === 'dashboard') renderDashboard();
   if (view === 'todo')      renderTodos();
@@ -114,7 +117,7 @@ document.addEventListener('touchstart', e => {
 }, { passive: true });
 
 document.addEventListener('touchend', e => {
-  if (_activeViewId() === 'notes') return;
+  if (_activeViewId() === 'notes' || _activeViewId() === 'todo') return;
   const dx = e.changedTouches[0].clientX - _swipeX;
   const dy = e.changedTouches[0].clientY - _swipeY;
   if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
@@ -128,7 +131,7 @@ let _wheelCooling = false;
 let _wheelCoolPrev = 0; // last deltaX seen during cooling (to detect re-acceleration)
 
 document.addEventListener('wheel', e => {
-  if (_activeViewId() === 'notes') return;
+  if (_activeViewId() === 'notes' || _activeViewId() === 'todo') return;
   if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) * 0.8) return;
   e.preventDefault();
   if (_dayChangeBusy) return;

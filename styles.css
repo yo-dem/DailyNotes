@@ -24,6 +24,7 @@ input, textarea {
   --accent-4: #C2185B;
   --accent-5: #F57F17;
   --shadow: 0 1px 4px rgba(0,0,0,0.18);
+  --right-col: 20px; /* shared right offset for FAB + zoom bar */
   /* set dynamically via JS; declared here to suppress linter warnings */
   --card-bg: #E3F2FD;
   --swatch-color: transparent;
@@ -174,6 +175,11 @@ body {
   border-color: var(--white);
 }
 
+.nav-btn.hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 /* ── Main ── */
 .main {
   position: relative;
@@ -305,13 +311,242 @@ body {
   font-weight: 400;
 }
 
-/* ── Notes full-width layout ── */
-body.notes-active .main {
-  max-width: 100%;
-  padding-left: 0;
-  padding-right: 0;
-  padding-top: 0;
+/* ── Notes: full-viewport canvas ── */
+
+/* Canvas takes the whole screen; header & dock float on top */
+body.notes-active #notesView {
+  position: fixed !important;
+  inset: 0;
+  z-index: 12;
+  display: flex !important;
+  flex-direction: column;
 }
+
+
+/* Notes-only: header becomes frosted glass so the canvas shows through */
+body.notes-active .header {
+  position: relative;
+  z-index: 20;
+  background: rgba(21, 101, 192, 0.35);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+/* ── Compact header (notes & todo) ── */
+body.notes-active .header,
+body.todo-active .header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: 6px 14px 6px;
+  gap: 10px;
+  opacity: 0.55;
+  transition: opacity 0.18s ease;
+}
+body.notes-active .header:hover,
+body.notes-active .header:focus-within,
+body.todo-active .header:hover,
+body.todo-active .header:focus-within {
+  opacity: 1;
+}
+
+body.notes-active .header .nav-btn,
+body.todo-active .header .nav-btn {
+  width: 34px;
+  height: 34px;
+  font-size: 0.95rem;
+  border-width: 1px;
+}
+
+body.notes-active .header .current-date,
+body.todo-active .header .current-date {
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin-top: 0;
+  letter-spacing: 0.02em;
+}
+
+body.notes-active .header .date-day-name,
+body.todo-active .header .date-day-name {
+  display: none;
+}
+
+body.notes-active .header-center,
+body.todo-active .header-center {
+  gap: 2px;
+}
+
+body.notes-active .today-chip,
+body.todo-active .today-chip {
+  padding: 2px 10px;
+  font-size: 0.62rem;
+  width: auto;
+  min-width: 60px;
+  border-radius: 12px;
+}
+
+/* Watermarks hidden only in notes mode */
+body.notes-active .watermark-day,
+body.notes-active .watermark-month {
+  display: none;
+}
+
+/* ── Compact dock (notes & todo) ── */
+body.notes-active,
+body.todo-active {
+  --dock-h: 44px; /* compact dock height — FAB is anchored to this */
+}
+
+body.notes-active .bottom-dock,
+body.todo-active .bottom-dock {
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding: 4px 12px max(6px, env(safe-area-inset-bottom));
+  opacity: 0.55;
+  transition: opacity 0.18s ease;
+}
+body.notes-active .bottom-dock:hover,
+body.notes-active .bottom-dock:focus-within,
+body.todo-active .bottom-dock:hover,
+body.todo-active .bottom-dock:focus-within {
+  opacity: 1;
+}
+
+body.notes-active .back-btn,
+body.todo-active .back-btn {
+  padding: 4px 18px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.2);
+}
+
+/* FAB slightly smaller in compact views; bottom is inherited from --dock-h on body */
+body.notes-active .fab,
+body.todo-active .fab {
+  width: 50px;
+  height: 50px;
+  font-size: 1.6rem;
+}
+
+body.todo-active .main { padding-bottom: 80px; }
+
+/* First todo starts slightly above vertical center; rest flow downward */
+body.todo-active .todo-list {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: max(8px, calc(40vh - 54px));
+}
+
+/* ── Connectors (SVG overlay inside notes canvas) ── */
+.notes-connectors {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* Group-level shadow makes curves visible on any background */
+.notes-connectors .conn-group {
+  filter: drop-shadow(0 1px 4px rgba(0,0,0,0.75));
+}
+
+/* Invisible wide hit zone — what the user actually clicks */
+.notes-connectors .conn-hit {
+  stroke: transparent;
+  stroke-width: 16;
+  fill: none;
+  pointer-events: stroke;
+  cursor: pointer;
+}
+
+/* Visible bezier path */
+.notes-connectors .conn {
+  stroke: #fff;
+  stroke-width: 2.5;
+  fill: none;
+  pointer-events: none;
+}
+
+/* Handles sub-group — opacity driven by JS proximity (0 far, 1 close) */
+.notes-connectors .conn-handles {
+  transition: opacity 0.25s;
+}
+
+/* Single midpoint handle circle */
+.notes-connectors .conn-cp {
+  fill: #fff;
+  stroke: #1565C0;
+  stroke-width: 2;
+  cursor: grab;
+  pointer-events: all;
+}
+
+.notes-connectors .conn-cp:active { cursor: grabbing; }
+
+/* Pending preview line while dragging a new connection */
+.notes-connectors .conn-pending {
+  stroke: rgba(255,255,255,0.65);
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+  fill: none;
+  pointer-events: none;
+  filter: drop-shadow(0 0 3px rgba(0,0,0,0.6));
+}
+
+/* Link (create-connection) button on each note */
+.nc-link {
+  width: 26px;
+  height: 26px;
+  background: none;
+  border: none;
+  color: rgba(0,0,0,0.3);
+  cursor: crosshair;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  padding: 0;
+  flex-shrink: 0;
+  transition: color 0.1s, background 0.1s;
+  touch-action: none;
+}
+.nc-link:hover { background: rgba(0,0,0,0.08); color: rgba(0,0,0,0.65); }
+.nc-link svg { width: 14px; height: 14px; }
+
+/* Connector action menu */
+.conn-menu {
+  position: fixed;
+  z-index: 2000;
+  background: rgba(24,24,40,0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: 10px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+.conn-menu button {
+  background: none;
+  border: none;
+  color: #fff;
+  padding: 9px 14px;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.88rem;
+  border-radius: 6px;
+  transition: background 0.1s;
+  white-space: nowrap;
+}
+.conn-menu button:hover { background: rgba(255,255,255,0.1); }
 
 /* ── Notes canvas ── */
 #notesView {
@@ -342,10 +577,18 @@ body.notes-active .main {
 
 /* ── Zoom bar ── */
 .notes-zoom-bar {
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
+  position: fixed;
+  right: var(--right-col);
+  /*
+   * Normally centered vertically (50vh - half-height).
+   * max() ensures it never overlaps the FAB: floor = dock + fab-gap + fab-height + margin.
+   */
+  bottom: max(
+    calc(var(--dock-h, 44px) + 20px + 50px + 14px),
+    calc(50vh - 59px)
+  );
+  top: auto;
+  transform: none;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -841,8 +1084,8 @@ body.notes-active .main {
 
 .fab {
   position: fixed;
-  bottom: calc(80px + 24px);
-  right: 36px;
+  bottom: calc(var(--dock-h, 72px) + 20px);
+  right: var(--right-col);
   width: 60px;
   height: 60px;
   border-radius: 50%;
@@ -1576,7 +1819,7 @@ body.notes-active .main {
   .header { padding: 20px 16px 12px; }
   .main { padding: 8px 12px 120px; }
   .nav-btn { width: 40px; height: 40px; font-size: 1.1rem; }
-  .fab { bottom: calc(80px + 16px); right: 20px; }
+  :root { --right-col: 14px; }
   .modal { padding: 24px 20px 20px; }
   .modal-note { width: 92vw; }
   .cal-day { width: 42px; height: 42px; font-size: 1rem; }
