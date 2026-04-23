@@ -332,19 +332,39 @@ body.notes-active .header {
   -webkit-backdrop-filter: blur(18px);
 }
 
-/* ── Compact header (notes & todo) ── */
+/* ── Compact header sizing (shared) ── */
 body.notes-active .header,
 body.todo-active .header {
-  position: sticky;
-  top: 0;
-  z-index: 20;
   padding: 6px 14px 6px;
   gap: 10px;
+  z-index: 20;
+}
+
+/* Notes: sticky + opacity fade */
+body.notes-active .header {
+  position: sticky;
+  top: 0;
   opacity: 0.55;
   transition: opacity 0.18s ease;
 }
 body.notes-active .header:hover,
-body.notes-active .header:focus-within,
+body.notes-active .header:focus-within {
+  opacity: 1;
+}
+
+/* Todo: fixed + strong glass — sempre leggibile quando i todo scorrono sotto */
+body.todo-active .header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(14, 72, 150, 0.92);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+  opacity: 0.82;
+  transition: opacity 0.18s ease;
+}
 body.todo-active .header:hover,
 body.todo-active .header:focus-within {
   opacity: 1;
@@ -399,13 +419,21 @@ body.todo-active {
 
 body.notes-active .bottom-dock,
 body.todo-active .bottom-dock {
-  background: rgba(255,255,255,0.04);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-top: 1px solid rgba(255,255,255,0.06);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
   padding: 4px 12px max(6px, env(safe-area-inset-bottom));
   opacity: 0.55;
   transition: opacity 0.18s ease;
+}
+
+body.notes-active .bottom-dock {
+  background: rgba(255,255,255,0.04);
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+body.todo-active .bottom-dock {
+  background: rgba(16, 80, 160, 0.72);
+  border-top: 1px solid rgba(255,255,255,0.1);
 }
 body.notes-active .bottom-dock:hover,
 body.notes-active .bottom-dock:focus-within,
@@ -432,7 +460,7 @@ body.todo-active .fab {
   font-size: 1.6rem;
 }
 
-body.todo-active .main { padding-bottom: 80px; }
+body.todo-active .main { padding-top: 54px; padding-bottom: 80px; }
 
 /* First todo starts slightly above vertical center; rest flow downward */
 body.todo-active .todo-list {
@@ -1112,7 +1140,9 @@ body.todo-active .todo-list {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.55);
+  background: rgba(0,0,0,0.38);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   z-index: 200;
   display: flex;
   align-items: center;
@@ -1122,94 +1152,138 @@ body.todo-active .todo-list {
 .modal-overlay.hidden { display: none; }
 
 .modal {
-  background: var(--white);
-  color: var(--text-dark);
-  padding: 36px 40px 28px;
+  background: rgba(218,224,236,0.84);
+  backdrop-filter: blur(36px) saturate(210%);
+  -webkit-backdrop-filter: blur(36px) saturate(210%);
+  color: #141428;
+  padding: 28px 28px 24px;
   min-width: 320px;
   max-width: 94vw;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.35);
+  border-radius: 24px;
+  border: 1px solid rgba(255,255,255,0.65);
+  box-shadow:
+    0 24px 72px rgba(0,0,0,0.36),
+    0 6px 18px rgba(0,0,0,0.16),
+    inset 0 1px 0 rgba(255,255,255,0.55);
 }
 
 .modal h2 {
-  font-size: 1.3rem;
-  font-weight: 600;
-  margin-bottom: 20px;
-  color: var(--accent-3);
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 18px;
+  letter-spacing: 0.01em;
 }
 
-.modal-note { width: 560px; }
-.modal-note h2 { font-size: 1.1rem; margin-bottom: 12px; }
+.note-title-input {
+  width: 100%;
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
+  letter-spacing: 0.01em;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  outline: none;
+  padding: 2px 0 6px;
+  margin-bottom: 18px;
+  display: block;
+  transition: border-color 0.15s;
+  caret-color: currentColor;
+}
+
+.note-title-input::placeholder { color: rgba(0,0,0,0.28); font-weight: 400; }
+.note-title-input:focus { border-bottom-color: currentColor; }
+
+.modal-note { width: 520px; }
 
 #noteContent {
   width: 100%;
-  min-height: 200px;
-  border: 2px solid #ddd;
-  padding: 12px;
+  min-height: 190px;
+  background: rgba(255,255,255,0.58);
+  border: 1.5px solid rgba(255,255,255,0.72);
+  border-radius: 14px;
+  padding: 14px 16px;
   font-size: 1rem;
   font-family: inherit;
+  color: #141428;
   resize: vertical;
   outline: none;
   line-height: 1.6;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+  transition: border-color 0.15s, background 0.15s;
 }
 
-#noteContent:focus { border-color: var(--accent-3); }
+#noteContent::placeholder { color: rgba(0,0,0,0.3); }
+
+#noteContent:focus {
+  border-color: rgba(21,101,192,0.55);
+  background: rgba(255,255,255,0.78);
+}
 
 /* ── Note color picker ── */
 .note-colors {
   display: flex;
   gap: 10px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  justify-content: center;
 }
 
 .note-color-swatch {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: 3px solid transparent;
   background: var(--swatch-color);
   cursor: pointer;
-  transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s;
+  transition: transform 0.13s, box-shadow 0.13s;
   outline: none;
   flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
 }
 
-.note-color-swatch:hover {
-  transform: scale(1.15);
-}
+.note-color-swatch:hover { transform: scale(1.15); }
 
 .note-color-swatch.selected {
-  border-color: var(--swatch-color);
-  box-shadow: 0 0 0 3px white, 0 0 0 5px var(--swatch-color);
-  transform: scale(1.1);
+  transform: scale(1.12);
+  box-shadow:
+    0 0 0 3px rgba(218,224,236,0.9),
+    0 0 0 5.5px var(--swatch-color),
+    0 4px 12px rgba(0,0,0,0.22);
 }
 
 .modal-actions {
   display: flex;
   gap: 10px;
-  margin-top: 16px;
+  margin-top: 20px;
 }
 
 .modal-actions button {
-  padding: 10px 24px;
+  flex: 1;
+  padding: 13px 20px;
   border: none;
+  border-radius: 14px;
   cursor: pointer;
   font-size: 0.95rem;
   font-family: inherit;
   font-weight: 600;
-  background: var(--accent-3);
+  background: #1565C0;
   color: var(--white);
-  transition: background 0.12s;
+  transition: background 0.12s, transform 0.1s;
+  box-shadow: 0 2px 8px rgba(21,101,192,0.35);
 }
 
-.modal-actions button:hover { background: var(--bg); }
+.modal-actions button:hover { background: #0d47a1; transform: translateY(-1px); }
+.modal-actions button:active { transform: translateY(0); }
 
 .modal-actions .btn-secondary {
-  background: #e0e0e0;
-  color: var(--text-dark);
+  background: rgba(0,0,0,0.08);
+  color: #333;
+  box-shadow: none;
 }
 
-.modal-actions .btn-secondary:hover { background: #bdbdbd; }
+.modal-actions .btn-secondary:hover { background: rgba(0,0,0,0.14); transform: translateY(-1px); }
 
 /* ── Empty state ── */
 .empty-state {

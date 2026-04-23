@@ -13,7 +13,7 @@ function openNoteModal(id) {
   _editingNoteId = id;
 
   const accentIdx = typeof t.accent === 'number' ? t.accent : 0;
-  $noteTitle.textContent = t.title || '(senza titolo)';
+  $noteTitle.value = t.title || '';
   $noteTitle.style.color = ACCENT_COLORS[accentIdx];
   $noteContent.value = t.content || '';
 
@@ -52,6 +52,7 @@ function closeNoteModal() {
 
 document.getElementById('noteSave').addEventListener('click', () => {
   if (!_editingNoteId) return;
+  updateField(_editingNoteId, 'title', $noteTitle.value.trim());
   updateField(_editingNoteId, 'content', $noteContent.value);
   closeNoteModal();
 });
