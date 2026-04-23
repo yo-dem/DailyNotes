@@ -109,7 +109,8 @@ function _snooze(todo, d, firedKey) {
 
 function _gotoTodo(id, d) {
   state.currentDate = new Date(d);
-  renderAll();
+  navigateTo('todo');
+  renderHeader();
   setTimeout(() => {
     const card = document.querySelector(`.todo-card[data-id="${id}"]`);
     if (!card) return;
@@ -122,7 +123,7 @@ function _gotoTodo(id, d) {
 // ── Polling — scansiona TUTTI i giorni in localStorage ──
 function _checkReminders() {
   const now = new Date();
-  const currentTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const nowMins = now.getHours() * 60 + now.getMinutes();
 
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
@@ -137,7 +138,14 @@ function _checkReminders() {
       todos.forEach(todo => {
         if (!todo.time) return;
         const firedKey = `${key}:${todo.id}`;
-        if (todo.time === currentTime && !_fired.has(firedKey)) {
+        if (_fired.has(firedKey)) return;
+        const [th, tm] = todo.time.split(':').map(Number);
+        // Minuti trascorsi dall'orario dell'allarme (con wrap a mezzanotte)
+        let minsAgo = nowMins - (th * 60 + tm);
+        if (minsAgo < 0) minsAgo += 1440;
+        // Scatta se l'orario è quello corrente o è stato perso negli ultimi 2 minuti
+        // (gestisce il throttling del browser quando il tab non è in focus)
+        if (minsAgo < 2) {
           _fired.add(firedKey);
           _playAlarm();
           alarmModal.open(todo, todoDate, firedKey);
@@ -146,6 +154,12 @@ function _checkReminders() {
     } catch (_) {}
   }
 }
+
+// Ri-controlla subito quando la pagina torna visibile o la finestra ottiene il focus
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') _checkReminders();
+});
+window.addEventListener('focus', _checkReminders);
 
 setInterval(_checkReminders, 30_000);
 _checkReminders();
