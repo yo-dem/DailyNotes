@@ -3,21 +3,36 @@
 const TILES_KEY = 'tiles_order';
 
 const TILE_DEFS = {
-  todo:  { label: 'Todo',  sub: () => _todoSubtitle(), icon: 'tileCheck', accent: 3 },
-  notes: { label: 'Note',  sub: () => 'Prossimamente', icon: 'tileNotes', accent: 1 },
+  todo:   { label: 'Todo',    sub: () => _todoSubtitle(),   icon: 'tileCheck',  accent: 3, view: 'todo' },
+  postit: { label: 'Post-it', sub: () => _postitSubtitle(), icon: 'tilePostit', accent: 5, view: 'notes' },
+  notes:  { label: 'Note',    sub: () => 'Prossimamente',   icon: 'tileNotes',  accent: 1, view: null },
 };
 
 function _todoSubtitle() {
   const todos = getTodos();
   if (!todos.length) return 'Nessun appunto';
-  const done = todos.filter(t => t.done).length;
-  return `${done} / ${todos.length} completati`;
+  const done  = todos.filter(t => t.done).length;
+  const pend  = todos.length - done;
+  if (done === todos.length) return `Tutti completati · ${todos.length}`;
+  return `${pend} da fare · ${done} completati`;
+}
+
+function _postitSubtitle() {
+  try {
+    const notes = JSON.parse(localStorage.getItem('dnotes_' + dateKey(state.currentDate))) || [];
+    if (!notes.length) return 'Nessun post-it';
+    const withText = notes.filter(n => n.body && n.body.trim()).length;
+    return withText
+      ? `${notes.length} post-it · ${withText} con testo`
+      : `${notes.length} post-it`;
+  } catch (_) { return 'Nessun post-it'; }
 }
 
 function _loadTileOrder() {
   try {
-    const s = JSON.parse(localStorage.getItem(TILES_KEY));
-    if (Array.isArray(s) && s.every(id => TILE_DEFS[id])) return s;
+    const s    = JSON.parse(localStorage.getItem(TILES_KEY));
+    const keys = Object.keys(TILE_DEFS);
+    if (Array.isArray(s) && s.every(id => TILE_DEFS[id]) && keys.every(id => s.includes(id))) return s;
   } catch (_) {}
   return Object.keys(TILE_DEFS);
 }
@@ -186,7 +201,8 @@ function _onPointerUp(e) {
     clone.remove();
     tile.classList.remove('dash-tile--ghost');
     _drag = null;
-    navigateTo(tile.dataset.tileId);
+    const def = TILE_DEFS[tile.dataset.tileId];
+    if (def && def.view) navigateTo(def.view);
     return;
   }
 

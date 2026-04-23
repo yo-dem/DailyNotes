@@ -238,7 +238,7 @@ body {
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 260px));
+  grid-template-columns: repeat(3, minmax(0, 260px));
   gap: 24px;
   justify-content: center;
   width: 100%;
@@ -382,7 +382,7 @@ body.notes-active .header .current-date,
 body.todo-active .header .current-date {
   font-size: 0.95rem;
   font-weight: 500;
-  margin-top: 0;
+  margin-top: 20px;
   letter-spacing: 0.02em;
 }
 
@@ -1065,6 +1065,14 @@ body.todo-active .todo-list {
   fill: none;
   stroke-width: 1.6;
   flex-shrink: 0;
+}
+
+.time-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: inherit;
+  letter-spacing: 0.02em;
+  line-height: 1;
 }
 
 .menu-btn {
@@ -1889,6 +1897,10 @@ body.todo-active .todo-list {
 }
 
 /* ── Responsive width ── */
+@media (max-width: 700px) {
+  .dashboard-grid { grid-template-columns: repeat(2, minmax(0, 260px)); }
+}
+
 @media (max-width: 600px) {
   .header { padding: 20px 16px 12px; }
   .main { padding: 8px 12px 120px; }
@@ -1898,6 +1910,8 @@ body.todo-active .todo-list {
   .modal-note { width: 92vw; }
   .cal-day { width: 42px; height: 42px; font-size: 1rem; }
   .tp-item { height: 58px; font-size: 1.7rem; }
+  .dashboard-grid { grid-template-columns: repeat(2, minmax(0, 200px)); gap: 14px; }
+  .dash-tile { padding: 28px 16px 24px; gap: 8px; }
 }
 
 /* ── Responsive height: calendar shrinks on short viewports ── */
