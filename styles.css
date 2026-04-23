@@ -225,7 +225,7 @@ body {
   font-family: inherit;
   font-size: 1rem;
   font-weight: 600;
-  padding: 10px 36px;
+  padding: 15px 40px;
   transition: background 0.12s;
 }
 .back-btn:hover { background: rgba(255,255,255,0.28); }
@@ -414,14 +414,14 @@ body.notes-active .watermark-month {
 /* ── Compact dock (notes & todo) ── */
 body.notes-active,
 body.todo-active {
-  --dock-h: 44px; /* compact dock height — FAB is anchored to this */
+  --dock-h: 58px; /* compact dock height — FAB is anchored to this */
 }
 
 body.notes-active .bottom-dock,
 body.todo-active .bottom-dock {
   backdrop-filter: blur(28px) saturate(160%);
   -webkit-backdrop-filter: blur(28px) saturate(160%);
-  padding: 4px 12px max(6px, env(safe-area-inset-bottom));
+  padding: 8px 12px max(8px, env(safe-area-inset-bottom));
   opacity: 0.55;
   transition: opacity 0.18s ease;
 }
@@ -444,12 +444,12 @@ body.todo-active .bottom-dock:focus-within {
 
 body.notes-active .back-btn,
 body.todo-active .back-btn {
-  padding: 4px 18px;
-  font-size: 0.78rem;
-  font-weight: 500;
-  border-radius: 10px;
-  background: rgba(255,255,255,0.12);
-  border-color: rgba(255,255,255,0.2);
+  padding: 9px 22px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.14);
+  border-color: rgba(255,255,255,0.24);
 }
 
 /* FAB slightly smaller in compact views; bottom is inherited from --dock-h on body */
@@ -672,11 +672,13 @@ body.todo-active .todo-list {
   transition: box-shadow 0.15s;
   user-select: none;
   -webkit-user-select: none;
+  cursor: grab;
 }
 
 .note-card--drag {
   box-shadow: 0 18px 52px rgba(0,0,0,0.32);
   z-index: 200;
+  cursor: grabbing;
 }
 
 .nc-top {
@@ -698,12 +700,19 @@ body.todo-active .todo-list {
   font-size: 0.88rem;
   font-weight: 700;
   color: var(--text-dark);
-  cursor: text;
+  cursor: grab;
   min-width: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  padding: 2px 2px;
+}
+
+.nc-title.nc-editing {
+  cursor: text;
+  touch-action: auto;
   user-select: text;
   -webkit-user-select: text;
-  touch-action: auto;
-  padding: 2px 2px;
 }
 
 .nc-color {
@@ -747,10 +756,19 @@ body.todo-active .todo-list {
   resize: none;
   padding: 2px 12px 10px;
   line-height: 1.55;
-  user-select: text;
-  -webkit-user-select: text;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  overflow-y: hidden;
+  cursor: grab;
+}
+
+.nc-body.nc-editing {
+  cursor: text;
   touch-action: pan-y;
   overflow-y: auto;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .nc-grip {

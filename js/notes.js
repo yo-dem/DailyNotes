@@ -136,6 +136,9 @@ function _initInteraction() {
         || e.target.closest('.notes-zoom-bar')
         || e.target.closest('.conn-hit')
         || e.target.closest('.conn-cp')) return;
+    // Blur any active note field so it exits edit mode before the pan gesture
+    const active = document.activeElement;
+    if (active?.closest?.('.note-card')) active.blur();
     e.preventDefault();
     $wrap.setPointerCapture(e.pointerId);
     _pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -231,8 +234,10 @@ function _buildNoteCard(note, $canvas) {
     <div class="nc-grip"></div>
   `;
 
-  el.querySelector('.nc-title').value = note.title;
-  el.querySelector('.nc-body').value  = note.body;
+  el.querySelector('.nc-title').value    = note.title;
+  el.querySelector('.nc-body').value     = note.body;
+  el.querySelector('.nc-title').readOnly = true;
+  el.querySelector('.nc-body').readOnly  = true;
   _styleColorDot(el.querySelector('.nc-color'), note.color);
   _bindCard(el, note);
   $canvas.appendChild(el);
@@ -258,25 +263,53 @@ function _bindCard(el, note) {
   const $body  = el.querySelector('.nc-body');
   const $color = el.querySelector('.nc-color');
   const $del   = el.querySelector('.nc-del');
-  const $top   = el.querySelector('.nc-top');
   const $grip  = el.querySelector('.nc-grip');
   const $link  = el.querySelector('.nc-link');
 
   $title.addEventListener('input', () => { note.title = $title.value; _persistNotes(); });
   $body.addEventListener('input',  () => { note.body  = $body.value;  _persistNotes(); });
 
-  // Stop canvas pan on card touch, bring card to front
+  // Restore read-only on blur (exit edit mode)
+  $title.addEventListener('blur', () => { $title.readOnly = true; $title.classList.remove('nc-editing'); });
+  $body.addEventListener ('blur', () => { $body.readOnly  = true; $body.classList.remove('nc-editing'); });
+
+  // Stop canvas pan on card touch; handle drag from anywhere + double-tap to edit
+  let _lastTap = 0, _lastTapField = null;
+
   el.addEventListener('pointerdown', e => {
     e.stopPropagation();
     _bringToFront(el);
-  });
 
-  // Drag from header bar (not when the target is an interactive child)
-  $top.addEventListener('pointerdown', e => {
-    if (e.target === $title
-        || e.target.closest('.nc-color')
-        || e.target.closest('.nc-del')
-        || e.target.closest('.nc-link')) return;
+    // Blur any other card's field that may be in edit mode
+    const active = document.activeElement;
+    if (active && active !== $title && active !== $body && active.closest?.('.note-card')) {
+      active.blur();
+    }
+
+    const t = e.target;
+    const onTitle = t === $title || $title.contains(t);
+    const onBody  = t === $body  || $body.contains(t);
+
+    if (onTitle || onBody) {
+      const $field = onTitle ? $title : $body;
+
+      // Already in edit mode — let the browser handle cursor placement normally
+      if (!$field.readOnly) return;
+
+      // Double-tap detection: second tap on the same field within 350 ms → edit
+      const now = Date.now();
+      if ($field === _lastTapField && now - _lastTap < 350) {
+        $field.readOnly = false;
+        $field.classList.add('nc-editing');
+        $field.focus();
+        _lastTap = 0;
+        _lastTapField = null;
+        return;
+      }
+      _lastTap = now;
+      _lastTapField = $field;
+    }
+
     _startMove(e, el, note);
   });
 
@@ -315,11 +348,16 @@ function _startMove(e, el, note) {
   // Use document-level listeners so pointerup always fires, even when
   // _bringToFront reappends el (which would silently drop pointer capture).
   const pid = e.pointerId;
-  el.classList.add('note-card--drag');
   const sx = e.clientX, sy = e.clientY, nx = note.x, ny = note.y;
+  let moved = false;
 
   const onMove = ev => {
     if (ev.pointerId !== pid) return;
+    if (!moved) {
+      if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 6) return;
+      moved = true;
+      el.classList.add('note-card--drag');
+    }
     note.x = nx + (ev.clientX - sx) / _zoom;
     note.y = ny + (ev.clientY - sy) / _zoom;
     el.style.left = `${note.x}px`;
@@ -332,8 +370,10 @@ function _startMove(e, el, note) {
     document.removeEventListener('pointermove',   onMove);
     document.removeEventListener('pointerup',     onEnd);
     document.removeEventListener('pointercancel', onEnd);
-    _persistNotes();
-    _redrawConnections();
+    if (moved) {
+      _persistNotes();
+      _redrawConnections();
+    }
   };
   document.addEventListener('pointermove',   onMove);
   document.addEventListener('pointerup',     onEnd);
