@@ -73,16 +73,20 @@ function renderDashboard() {
 }
 
 // ── Pointer drag state ─────────────────────────────────
+// _drag holds the active drag; _landing blocks new drags while the landing
+// animation plays. They are kept separate so _drag is always reset on
+// pointerup, and a stuck _landing (e.g. if renderDashboard throws) can't
+// permanently block tile interaction.
 
-let _drag = null;
+let _drag    = null;
+let _landing = false;
 
 function _onPointerDown(e) {
   if (e.button !== 0) return;
-  if (_drag) return; // block new drag while landing animation is running
+  if (_drag || _landing) return;
   e.preventDefault();
 
   const tile = this;
-  tile.setPointerCapture(e.pointerId);
 
   const $grid = document.getElementById('dashboardGrid');
   const tiles = [...$grid.querySelectorAll('.dash-tile')];
@@ -109,7 +113,6 @@ function _onPointerDown(e) {
     zIndex:        '2000',
     pointerEvents: 'none',
     borderRadius:  '24px',
-    willChange:    'left, top',
     transition:    'transform 0.15s ease, box-shadow 0.15s ease',
     transform:     'scale(1.07)',
     boxShadow:     '0 28px 64px rgba(0,0,0,0.45)',
@@ -123,16 +126,19 @@ function _onPointerDown(e) {
     clone,
     srcIdx,
     slotRects,
-    nearestIdx:  srcIdx,
+    nearestIdx:   srcIdx,
     currentOrder: [..._loadTileOrder()],
     ox: e.clientX - sr.left,
     oy: e.clientY - sr.top,
     moved: false,
   };
 
-  tile.addEventListener('pointermove',   _onPointerMove);
-  tile.addEventListener('pointerup',     _onPointerUp);
-  tile.addEventListener('pointercancel', _onPointerUp);
+  // Listen on document (not on the tile with setPointerCapture) so the
+  // pointerup event can't be lost if the tile is removed from the DOM or
+  // if pointer capture is released implicitly by the browser.
+  document.addEventListener('pointermove',   _onPointerMove);
+  document.addEventListener('pointerup',     _onPointerUp);
+  document.addEventListener('pointercancel', _onPointerUp);
 }
 
 function _onPointerMove(e) {
@@ -193,15 +199,18 @@ function _onPointerUp() {
 
   const { tile, clone, currentOrder, slotRects, moved } = _drag;
 
-  tile.removeEventListener('pointermove',   _onPointerMove);
-  tile.removeEventListener('pointerup',     _onPointerUp);
-  tile.removeEventListener('pointercancel', _onPointerUp);
+  document.removeEventListener('pointermove',   _onPointerMove);
+  document.removeEventListener('pointerup',     _onPointerUp);
+  document.removeEventListener('pointercancel', _onPointerUp);
+
+  // Clear _drag IMMEDIATELY so any stray events (or bugs below) can't leave
+  // the UI stuck. _landing handles blocking new drags during the animation.
+  _drag = null;
 
   if (!moved) {
     // Tap: clean up and navigate
     clone.remove();
     tile.classList.remove('dash-tile--ghost');
-    _drag = null;
     const def = TILE_DEFS[tile.dataset.tileId];
     if (def && def.view) navigateTo(def.view);
     return;
@@ -217,21 +226,15 @@ function _onPointerUp() {
   clone.style.transform  = 'scale(1)';
   clone.style.boxShadow  = '0 4px 20px rgba(0,0,0,0.15)';
 
-  // Unlock and rebuild the grid immediately so the next drag/tap starts
-  // with a fully consistent DOM — no stale transforms or order mismatch.
-  _drag = null;
+  _landing = true;
   _saveTileOrder(currentOrder);
-  renderDashboard();
 
-  // Ghost only the landing tile so the clone appears to materialise there.
-  const $grid2 = document.getElementById('dashboardGrid');
-  const landingTile = $grid2
-    ? ([...$grid2.querySelectorAll('.dash-tile')][finalIdx] || null)
-    : null;
-  if (landingTile) landingTile.classList.add('dash-tile--ghost');
-
+  // Rebuild the grid AFTER the clone has finished landing — rebuilding
+  // mid-transition destroys the source tile and can corrupt the style
+  // pipeline, leaving the UI frozen.
   setTimeout(() => {
-    clone.remove();
-    if (landingTile) landingTile.classList.remove('dash-tile--ghost');
+    _landing = false;
+    try { clone.remove(); } catch (_) {}
+    try { renderDashboard(); } catch (_) {}
   }, 220);
 }
