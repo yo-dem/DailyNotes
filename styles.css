@@ -604,20 +604,16 @@ body.todo-active .todo-list {
   transform-origin: 0 0;
 }
 
+.notes-canvas--animated {
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 /* ── Zoom bar ── */
 .notes-zoom-bar {
   position: fixed;
-  right: var(--right-col);
-  /*
-   * Normally centered vertically (50vh - half-height).
-   * max() ensures it never overlaps the FAB: floor = dock + fab-gap + fab-height + margin.
-   */
-  bottom: max(
-    calc(var(--dock-h, 44px) + 20px + 50px + 14px),
-    calc(50vh - 59px)
-  );
-  top: auto;
-  transform: none;
+  left: var(--right-col);
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -650,6 +646,23 @@ body.todo-active .todo-list {
   line-height: 1;
 }
 .nzb-btn:hover { background: rgba(255,255,255,0.3); }
+.nzb-btn--danger { color: rgba(255,140,140,0.9); }
+.nzb-btn--danger:hover { background: rgba(220,60,60,0.28); color: #ff8a8a; }
+
+.nzb-btn svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+  flex-shrink: 0;
+}
+
+.nzb-sep {
+  width: 22px;
+  height: 1px;
+  background: rgba(255,255,255,0.22);
+  margin: 2px 0;
+  flex-shrink: 0;
+}
 
 .nzb-pct {
   color: var(--white);
@@ -1305,6 +1318,88 @@ body.todo-active .todo-list {
 }
 
 .modal-actions .btn-secondary:hover { background: rgba(0,0,0,0.14); transform: translateY(-1px); }
+
+/* ── Confirm dialog ── */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.42);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.confirm-modal {
+  background: rgba(218,224,236,0.90);
+  backdrop-filter: blur(36px) saturate(210%);
+  -webkit-backdrop-filter: blur(36px) saturate(210%);
+  color: #141428;
+  padding: 28px 28px 22px;
+  width: 340px;
+  max-width: 92vw;
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,0.65);
+  box-shadow:
+    0 24px 72px rgba(0,0,0,0.36),
+    0 6px 18px rgba(0,0,0,0.16),
+    inset 0 1px 0 rgba(255,255,255,0.55);
+}
+
+.confirm-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0 0 10px;
+  letter-spacing: 0.01em;
+}
+
+.confirm-message {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0 0 22px;
+  opacity: 0.72;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.confirm-cancel,
+.confirm-ok {
+  flex: 1;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 13px;
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-family: inherit;
+  font-weight: 600;
+  transition: background 0.12s, transform 0.1s;
+}
+
+.confirm-cancel {
+  background: rgba(0,0,0,0.08);
+  color: #333;
+}
+.confirm-cancel:hover { background: rgba(0,0,0,0.14); transform: translateY(-1px); }
+.confirm-cancel:active { transform: translateY(0); }
+
+.confirm-ok {
+  background: #1565C0;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(21,101,192,0.35);
+}
+.confirm-ok:hover { background: #0d47a1; transform: translateY(-1px); }
+.confirm-ok:active { transform: translateY(0); }
+
+.confirm-ok--danger {
+  background: #c62828;
+  box-shadow: 0 2px 8px rgba(198,40,40,0.35);
+}
+.confirm-ok--danger:hover { background: #b71c1c; }
 
 /* ── Empty state ── */
 .empty-state {

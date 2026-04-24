@@ -2,6 +2,7 @@
 
 const NOTES_STORE = 'dnotes_';
 const CONN_STORE  = 'dconn_';
+const VIEW_STORE  = 'dview_';
 const DOT_SIZE    = 26;
 const ZOOM_MIN    = 0.25;
 const ZOOM_MAX    = 3;
@@ -19,6 +20,7 @@ let _panSX = 0, _panSY = 0, _panOX = 0, _panOY = 0;
 let _pointers      = new Map();
 let _prevPinchDist = 0;
 let _panInited     = false;
+let _navIndex      = -1;
 
 // ── Storage ────────────────────────────────────────────
 function _loadNotes() {
@@ -41,19 +43,49 @@ function _persistConnections() {
   localStorage.setItem(CONN_STORE + dateKey(state.currentDate), JSON.stringify(_connections));
 }
 
+function _loadView() {
+  try { return JSON.parse(localStorage.getItem(VIEW_STORE + dateKey(state.currentDate))) || null; }
+  catch (_) { return null; }
+}
+
+let _persistViewTimer = null;
+function _schedPersistView() {
+  clearTimeout(_persistViewTimer);
+  _persistViewTimer = setTimeout(() => {
+    localStorage.setItem(VIEW_STORE + dateKey(state.currentDate), JSON.stringify({ panX: _panX, panY: _panY, zoom: _zoom }));
+  }, 400);
+}
+
 // ── Public ─────────────────────────────────────────────
 function renderNotes() {
   _loadNotes();
   _loadConnections();
-  _panX = 0; _panY = 0; _zoom = 1;
+  _navIndex = -1;
   const $canvas = document.getElementById('notesCanvas');
   if (!$canvas) return;
   $canvas.innerHTML = '';
   _buildConnectorsSvg($canvas);
   _notes.forEach(n => _buildNoteCard(n, $canvas));
   _redrawConnections();
-  _applyTransform();
   if (!_panInited) { _initInteraction(); _panInited = true; }
+
+  const saved = _loadView();
+  if (saved) {
+    _panX = saved.panX; _panY = saved.panY; _zoom = saved.zoom;
+  } else if (_notes.length) {
+    const first = _notes[0];
+    const $wrap = document.getElementById('notesCanvasWrap');
+    const r = $wrap.getBoundingClientRect();
+    const pad = 80;
+    const scaleX = (r.width  - pad * 2) / first.w;
+    const scaleY = (r.height - pad * 2) / first.h;
+    _zoom = Math.min(1, scaleX, scaleY);
+    _panX = r.width  / 2 - (first.x + first.w / 2) * _zoom;
+    _panY = r.height / 2 - (first.y + first.h / 2) * _zoom;
+  } else {
+    _panX = 0; _panY = 0; _zoom = 1;
+  }
+  _applyTransform();
 }
 
 function addNote() {
@@ -93,6 +125,7 @@ function _applyTransform() {
     $wrap.style.backgroundPosition = `${bx}px ${by}px`;
   }
   if ($pct) $pct.textContent = `${Math.round(_zoom * 100)}%`;
+  _schedPersistView();
 }
 
 // ── Zoom helpers ───────────────────────────────────────
@@ -214,6 +247,48 @@ function _initInteraction() {
   // ── Zoom bar ──
   document.getElementById('nzbPlus') ?.addEventListener('click', e => { e.stopPropagation(); _zoomCenter(+ZOOM_STEP); });
   document.getElementById('nzbMinus')?.addEventListener('click', e => { e.stopPropagation(); _zoomCenter(-ZOOM_STEP); });
+
+  // ── Layout + navigation bar ──
+  document.getElementById('nzbGrid') ?.addEventListener('click', e => { e.stopPropagation(); _arrangeGrid(); });
+  document.getElementById('nzbHoriz')?.addEventListener('click', e => { e.stopPropagation(); _arrangeHorizontal(); });
+  document.getElementById('nzbVert') ?.addEventListener('click', e => { e.stopPropagation(); _arrangeVertical(); });
+  document.getElementById('nzbPrev') ?.addEventListener('click', e => { e.stopPropagation(); _navigatePrev(); });
+  document.getElementById('nzbNext') ?.addEventListener('click', e => { e.stopPropagation(); _navigateNext(); });
+
+  document.getElementById('nzbClearConn')?.addEventListener('click', e => {
+    e.stopPropagation();
+    if (!_connections.length) return;
+    showConfirm({
+      title: 'Elimina tutte le connessioni',
+      message: 'Tutte le frecce tra i post-it verranno eliminate. Questa azione non è reversibile.',
+      confirmLabel: 'Elimina',
+      danger: true,
+      onConfirm: () => {
+        _connections = [];
+        _persistConnections();
+        _redrawConnections();
+      },
+    });
+  });
+
+  document.getElementById('nzbClearAll')?.addEventListener('click', e => {
+    e.stopPropagation();
+    if (!_notes.length) return;
+    showConfirm({
+      title: 'Elimina tutti i post-it',
+      message: `Stai per eliminare ${_notes.length} post-it e tutte le loro connessioni. Questa azione non è reversibile.`,
+      confirmLabel: 'Elimina tutto',
+      danger: true,
+      onConfirm: () => {
+        _notes = [];
+        _connections = [];
+        _persistNotes();
+        _persistConnections();
+        document.getElementById('notesCanvas').innerHTML = '';
+        _buildConnectorsSvg(document.getElementById('notesCanvas'));
+      },
+    });
+  });
 }
 
 // ── Build card ─────────────────────────────────────────
@@ -776,3 +851,109 @@ function _openConnMenu(conn, clientX, clientY) {
     });
   }, 0);
 }
+
+// ── Animated transform ─────────────────────────────────
+function _animateTransform() {
+  const $canvas = document.getElementById('notesCanvas');
+  if (!$canvas) return;
+  $canvas.classList.add('notes-canvas--animated');
+  _applyTransform();
+  setTimeout(() => $canvas.classList.remove('notes-canvas--animated'), 480);
+}
+
+// ── Center viewport on the bounding box of all notes ──
+function _centerOnBounds(animated = true) {
+  if (!_notes.length) return;
+  const minX = Math.min(..._notes.map(n => n.x));
+  const minY = Math.min(..._notes.map(n => n.y));
+  const maxX = Math.max(..._notes.map(n => n.x + n.w));
+  const maxY = Math.max(..._notes.map(n => n.y + n.h));
+  const $wrap = document.getElementById('notesCanvasWrap');
+  if (!$wrap) return;
+  const r = $wrap.getBoundingClientRect();
+  const pad = 48;
+  const scaleX = (r.width  - pad * 2) / (maxX - minX || 1);
+  const scaleY = (r.height - pad * 2) / (maxY - minY || 1);
+  const fitZoom = Math.max(ZOOM_MIN, Math.min(scaleX, scaleY, ZOOM_MAX));
+  const newZoom = Math.min(1, fitZoom); // zoom-in fino al 100%, mai oltre
+  const cxW = (minX + maxX) / 2;
+  const cyW = (minY + maxY) / 2;
+  _panX = r.width  / 2 - cxW * newZoom;
+  _panY = r.height / 2 - cyW * newZoom;
+  _zoom = newZoom;
+  if (animated) _animateTransform(); else _applyTransform();
+}
+
+// ── Layout: grid ───────────────────────────────────────
+function _arrangeGrid() {
+  if (!_notes.length) return;
+  const cols = Math.ceil(Math.sqrt(_notes.length));
+  const gapX = 40, gapY = 40;
+  const maxW = Math.max(..._notes.map(n => n.w));
+  const maxH = Math.max(..._notes.map(n => n.h));
+  _notes.forEach((note, i) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    note.x = col * (maxW + gapX);
+    note.y = row * (maxH + gapY);
+    const el = document.querySelector(`.note-card[data-nid="${note.id}"]`);
+    if (el) { el.style.left = `${note.x}px`; el.style.top = `${note.y}px`; }
+  });
+  _persistNotes();
+  _redrawConnections();
+  _centerOnBounds();
+}
+
+// ── Layout: horizontal row, vertically centered ────────
+function _arrangeHorizontal() {
+  if (!_notes.length) return;
+  const gap = 40;
+  const maxH = Math.max(..._notes.map(n => n.h));
+  let curX = 0;
+  _notes.forEach(note => {
+    note.x = curX;
+    note.y = (maxH - note.h) / 2;
+    curX += note.w + gap;
+    const el = document.querySelector(`.note-card[data-nid="${note.id}"]`);
+    if (el) { el.style.left = `${note.x}px`; el.style.top = `${note.y}px`; }
+  });
+  _persistNotes();
+  _redrawConnections();
+  _centerOnBounds();
+}
+
+// ── Layout: vertical column, horizontally centered ─────
+function _arrangeVertical() {
+  if (!_notes.length) return;
+  const gap = 40;
+  const maxW = Math.max(..._notes.map(n => n.w));
+  let curY = 0;
+  _notes.forEach(note => {
+    note.x = (maxW - note.w) / 2;
+    note.y = curY;
+    curY += note.h + gap;
+    const el = document.querySelector(`.note-card[data-nid="${note.id}"]`);
+    if (el) { el.style.left = `${note.x}px`; el.style.top = `${note.y}px`; }
+  });
+  _persistNotes();
+  _redrawConnections();
+  _centerOnBounds();
+}
+
+// ── Navigation: pan to a specific note ────────────────
+function _navigateTo(idx) {
+  if (!_notes.length) return;
+  _navIndex = ((idx % _notes.length) + _notes.length) % _notes.length;
+  const note = _notes[_navIndex];
+  const $wrap = document.getElementById('notesCanvasWrap');
+  if (!$wrap) return;
+  const r = $wrap.getBoundingClientRect();
+  const cx = note.x + note.w / 2;
+  const cy = note.y + note.h / 2;
+  _panX = r.width  / 2 - cx * _zoom;
+  _panY = r.height / 2 - cy * _zoom;
+  _animateTransform();
+}
+
+function _navigatePrev() { _navigateTo(_navIndex <= 0 ? _notes.length - 1 : _navIndex - 1); }
+function _navigateNext() { _navigateTo(_navIndex + 1); }

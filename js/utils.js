@@ -66,6 +66,40 @@ const ACCENT_COLORS = ['#7B1FA2','#2E7D32','#E65100','#0288D1','#C2185B','#F57F1
 const ACCENT_LIGHT  = ['#CE93D8','#A5D6A7','#FFCC80','#81D4FA','#F48FB1','#FFE082'];
 const PASTEL_BG     = ['#EDE7F6','#E8F5E9','#FBE9E7','#E1F5FE','#FCE4EC','#FFFDE7'];
 
+// ── Confirm dialog ─────────────────────────────────────
+/*
+ * showConfirm({ title, message, confirmLabel, danger, onConfirm })
+ * Builds and shows a modal overlay; resolves/dismisses on user action.
+ * danger: true → confirm button uses destructive red style
+ */
+function showConfirm({ title = '', message = '', confirmLabel = 'Conferma', danger = false, onConfirm }) {
+  const overlay = document.createElement('div');
+  overlay.className = 'confirm-overlay';
+
+  overlay.innerHTML = `
+    <div class="confirm-modal" role="alertdialog" aria-modal="true">
+      <p class="confirm-title">${escHtml(title)}</p>
+      <p class="confirm-message">${escHtml(message)}</p>
+      <div class="confirm-actions">
+        <button class="confirm-cancel">Annulla</button>
+        <button class="confirm-ok${danger ? ' confirm-ok--danger' : ''}">${escHtml(confirmLabel)}</button>
+      </div>
+    </div>
+  `;
+
+  const close = () => overlay.remove();
+
+  overlay.querySelector('.confirm-cancel').addEventListener('click', close);
+  overlay.querySelector('.confirm-ok').addEventListener('click', () => {
+    close();
+    onConfirm?.();
+  });
+  overlay.addEventListener('pointerdown', e => { if (e.target === overlay) close(); });
+
+  document.body.appendChild(overlay);
+  overlay.querySelector('.confirm-ok').focus();
+}
+
 // ── Flat SVG icons ─────────────────────────────────────
 const SVG = {
   note:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`,
