@@ -354,7 +354,7 @@ body.notes-active .header:focus-within {
   opacity: 1;
 }
 
-/* To-do: fixed + strong glass — sempre leggibile quando i todo scorrono sotto */
+/* To-do: fixed + strong glass — sempre leggibile quando i to-do scorrono sotto */
 body.todo-active .header {
   position: fixed;
   top: 0;
