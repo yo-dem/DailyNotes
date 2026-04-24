@@ -26,6 +26,8 @@ input, textarea {
   --shadow: 0 1px 4px rgba(0,0,0,0.18);
   --right-col: 20px; /* shared right offset for FAB + zoom bar */
   /* set dynamically via JS; declared here to suppress linter warnings */
+  --nc-bg: #EDE7F6;
+  --nc-accent: #7B1FA2;
   --card-bg: #E3F2FD;
   --swatch-color: transparent;
   --swatch-bg: transparent;
@@ -662,9 +664,9 @@ body.todo-active .todo-list {
 /* ── Note card ── */
 .note-card {
   position: absolute;
-  background: var(--nc-bg, #EDE7F6);
+  background: var(--nc-bg);
   border-radius: 14px;
-  border-top: 4px solid var(--nc-accent, #7B1FA2);
+  border-top: 4px solid var(--nc-accent);
   box-shadow: 0 4px 18px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.08);
   display: flex;
   flex-direction: column;
