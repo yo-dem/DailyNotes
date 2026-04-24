@@ -217,13 +217,21 @@ function _onPointerUp() {
   clone.style.transform  = 'scale(1)';
   clone.style.boxShadow  = '0 4px 20px rgba(0,0,0,0.15)';
 
-  const thisDrag = _drag;
+  // Unlock and rebuild the grid immediately so the next drag/tap starts
+  // with a fully consistent DOM — no stale transforms or order mismatch.
+  _drag = null;
+  _saveTileOrder(currentOrder);
+  renderDashboard();
+
+  // Ghost only the landing tile so the clone appears to materialise there.
+  const $grid2 = document.getElementById('dashboardGrid');
+  const landingTile = $grid2
+    ? ([...$grid2.querySelectorAll('.dash-tile')][finalIdx] || null)
+    : null;
+  if (landingTile) landingTile.classList.add('dash-tile--ghost');
+
   setTimeout(() => {
     clone.remove();
-    if (_drag === thisDrag) {
-      _drag = null;
-      _saveTileOrder(currentOrder);
-      renderDashboard();
-    }
+    if (landingTile) landingTile.classList.remove('dash-tile--ghost');
   }, 220);
 }
