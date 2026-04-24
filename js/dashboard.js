@@ -187,10 +187,10 @@ function _onPointerMove(e) {
   });
 }
 
-function _onPointerUp(e) {
+function _onPointerUp() {
   if (!_drag) return;
 
-  const { tile, clone, currentOrder, slotRects, srcIdx, moved } = _drag;
+  const { tile, clone, currentOrder, slotRects, moved } = _drag;
 
   tile.removeEventListener('pointermove',   _onPointerMove);
   tile.removeEventListener('pointerup',     _onPointerUp);

@@ -110,14 +110,17 @@ function _changeDayAnimated(dir) {
 // ── Touch swipe ────────────────────────────────────────
 let _swipeX = 0;
 let _swipeY = 0;
+let _swipeOnTile = false;
 
 document.addEventListener('touchstart', e => {
   _swipeX = e.touches[0].clientX;
   _swipeY = e.touches[0].clientY;
+  _swipeOnTile = !!e.target.closest('.dash-tile');
 }, { passive: true });
 
 document.addEventListener('touchend', e => {
   if (_activeViewId() === 'notes' || _activeViewId() === 'todo') return;
+  if (_swipeOnTile) return;
   const dx = e.changedTouches[0].clientX - _swipeX;
   const dy = e.changedTouches[0].clientY - _swipeY;
   if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.5) return;

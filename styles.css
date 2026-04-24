@@ -982,6 +982,9 @@ body.todo-active .todo-list {
   font-family: inherit;
   line-height: 1.2;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .card-title[data-accent="0"] { color: var(--accent-0); }
