@@ -78,6 +78,7 @@ let _drag = null;
 
 function _onPointerDown(e) {
   if (e.button !== 0) return;
+  if (_drag) return; // block new drag while landing animation is running
   e.preventDefault();
 
   const tile = this;
@@ -216,10 +217,13 @@ function _onPointerUp() {
   clone.style.transform  = 'scale(1)';
   clone.style.boxShadow  = '0 4px 20px rgba(0,0,0,0.15)';
 
+  const thisDrag = _drag;
   setTimeout(() => {
     clone.remove();
-    _drag = null;
-    _saveTileOrder(currentOrder);
-    renderDashboard();
+    if (_drag === thisDrag) {
+      _drag = null;
+      _saveTileOrder(currentOrder);
+      renderDashboard();
+    }
   }, 220);
 }
