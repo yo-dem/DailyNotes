@@ -354,7 +354,7 @@ body.notes-active .header:focus-within {
   opacity: 1;
 }
 
-/* Todo: fixed + strong glass — sempre leggibile quando i todo scorrono sotto */
+/* To-do: fixed + strong glass — sempre leggibile quando i todo scorrono sotto */
 body.todo-active .header {
   position: fixed;
   top: 0;
@@ -413,7 +413,7 @@ body.notes-active .watermark-month {
   display: none;
 }
 
-/* ── Compact dock (notes & todo) ── */
+/* ── Compact dock (notes & to-do) ── */
 body.notes-active,
 body.todo-active {
   --dock-h: 58px; /* compact dock height — FAB is anchored to this */
@@ -464,7 +464,6 @@ body.todo-active .fab {
 
 body.todo-active .main { padding-top: 54px; padding-bottom: 80px; }
 
-/* First todo starts slightly above vertical center; rest flow downward */
 body.todo-active .todo-list {
   margin-top: 0;
   margin-bottom: 0;
