@@ -1,6 +1,6 @@
 'use strict';
 
-let dragSrcIndex = null;
+let _todoDrag = null;
 
 // ── Rendering ──────────────────────────────────────────
 
@@ -28,7 +28,6 @@ function _buildCard(todo, index) {
   const li = document.createElement('li');
   li.className = `todo-card${todo.done ? ' done' : ''}`;
   li.style.setProperty('--card-bg', PASTEL_BG[accentIdx]);
-  li.draggable = false;
   li.dataset.id = todo.id;
 
   li.innerHTML = `
@@ -74,8 +73,7 @@ function _bindCardEvents(li, todo) {
   const titleWrap = li.querySelector('.card-title-wrap');
   titleWrap.dataset.value = titleInput.value || 'Titolo...';
 
-  dragHandle.addEventListener('mousedown', () => { li.draggable = true; });
-  li.addEventListener('dragend', () => { li.draggable = false; });
+  dragHandle.addEventListener('pointerdown', _onTodoDragHandle);
 
   checkBtn.addEventListener('click', e => {
     e.stopPropagation();
@@ -114,12 +112,6 @@ function _bindCardEvents(li, todo) {
     if (e.target === titleInput) return;
     openNoteModal(todo.id);
   });
-
-  li.addEventListener('dragstart', _onDragStart);
-  li.addEventListener('dragover',  _onDragOver);
-  li.addEventListener('drop',      _onDrop);
-  li.addEventListener('dragend',   _onDragEnd);
-  li.addEventListener('dragleave', _onDragLeave);
 }
 
 // ── CRUD ───────────────────────────────────────────────
@@ -162,45 +154,168 @@ function deleteTodo(id) {
   renderTodos();
 }
 
-// ── Drag & Drop ────────────────────────────────────────
+// ── Pointer Drag & Drop ────────────────────────────────
 
-function _cardIndexOf(li) {
-  return [...document.querySelectorAll('.todo-card')].indexOf(li);
-}
-
-function _onDragStart(e) {
-  dragSrcIndex = _cardIndexOf(this);
-  this.classList.add('dragging');
-  e.dataTransfer.effectAllowed = 'move';
-  e.dataTransfer.setData('text/plain', dragSrcIndex);
-}
-
-function _onDragOver(e) {
+function _onTodoDragHandle(e) {
+  if (e.button !== 0) return;
+  if (_todoDrag) return;
   e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-  document.querySelectorAll('.todo-card').forEach(c => c.classList.remove('drag-over'));
-  this.classList.add('drag-over');
-}
 
-function _onDragLeave() {
-  this.classList.remove('drag-over');
-}
+  const card = e.currentTarget.closest('.todo-card');
+  if (!card) return;
+  card.setPointerCapture(e.pointerId);
 
-function _onDrop(e) {
-  e.preventDefault();
-  const destIndex = _cardIndexOf(this);
-  if (dragSrcIndex === null || dragSrcIndex === destIndex) return;
+  const $list = document.getElementById('todoList');
+  const cards = [...$list.querySelectorAll('.todo-card')];
 
-  const todos = getTodos();
-  const [moved] = todos.splice(dragSrcIndex, 1);
-  todos.splice(destIndex, 0, moved);
-  setTodos(todos);
-  renderTodos();
-}
-
-function _onDragEnd() {
-  document.querySelectorAll('.todo-card').forEach(c => {
-    c.classList.remove('dragging', 'drag-over');
+  // Reset any lingering transforms and capture original slot rects
+  cards.forEach(c => { c.style.transition = 'none'; c.style.transform = ''; });
+  const slotRects = cards.map(c => {
+    const r = c.getBoundingClientRect();
+    return { left: r.left, top: r.top, width: r.width, height: r.height };
   });
-  dragSrcIndex = null;
+
+  const srcIdx = cards.indexOf(card);
+  const sr     = slotRects[srcIdx];
+
+  // Floating clone that follows the pointer
+  const clone = card.cloneNode(true);
+  Object.assign(clone.style, {
+    position:      'fixed',
+    left:          `${sr.left}px`,
+    top:           `${sr.top}px`,
+    width:         `${sr.width}px`,
+    height:        `${sr.height}px`,
+    margin:        '0',
+    zIndex:        '2000',
+    pointerEvents: 'none',
+    willChange:    'top',
+    transition:    'transform 0.15s ease, box-shadow 0.15s ease',
+    transform:     'scale(1.03)',
+    boxShadow:     '0 24px 52px rgba(0,0,0,0.32)',
+  });
+  document.body.appendChild(clone);
+
+  card.classList.add('todo-card--ghost');
+
+  _todoDrag = {
+    card,
+    clone,
+    srcIdx,
+    slotRects,
+    nearestIdx:   srcIdx,
+    currentOrder: getTodos().map(t => t.id),
+    ox: e.clientX - sr.left,
+    oy: e.clientY - sr.top,
+    moved: false,
+  };
+
+  card.addEventListener('pointermove',        _onTodoPointerMove);
+  card.addEventListener('pointerup',          _onTodoPointerUp);
+  card.addEventListener('pointercancel',      _onTodoPointerUp);
+  card.addEventListener('lostpointercapture', _onTodoLostCapture);
+}
+
+function _onTodoPointerMove(e) {
+  if (!_todoDrag) return;
+  const { clone, slotRects, srcIdx, oy, card } = _todoDrag;
+
+  const y = e.clientY - oy;
+
+  if (!_todoDrag.moved) {
+    const dy = e.clientY - (slotRects[srcIdx].top + oy);
+    if (Math.abs(dy) < 8) return;
+    _todoDrag.moved = true;
+  }
+
+  clone.style.left = `${e.clientX - _todoDrag.ox}px`;
+  clone.style.top  = `${y}px`;
+
+  // Center of the floating clone
+  const cloneCenterY = y + slotRects[srcIdx].height / 2;
+
+  // Find the nearest original slot
+  let nearestIdx = srcIdx;
+  let minDist    = Infinity;
+  slotRects.forEach((r, i) => {
+    const d = Math.abs(cloneCenterY - (r.top + r.height / 2));
+    if (d < minDist) { minDist = d; nearestIdx = i; }
+  });
+
+  if (nearestIdx === _todoDrag.nearestIdx) return;
+  _todoDrag.nearestIdx = nearestIdx;
+
+  // Recompute conceptual order
+  const ids      = getTodos().map(t => t.id);
+  const newOrder = [...ids];
+  const [moved]  = newOrder.splice(srcIdx, 1);
+  newOrder.splice(nearestIdx, 0, moved);
+  _todoDrag.currentOrder = newOrder;
+
+  // Translate other cards to their new slots
+  const $list = document.getElementById('todoList');
+  [...$list.querySelectorAll('.todo-card')].forEach((c, domIdx) => {
+    if (c === card) return;
+    const targetIdx = newOrder.indexOf(c.dataset.id);
+    const tr = slotRects[targetIdx];
+    const cr = slotRects[domIdx];
+    c.style.transition = 'transform 0.2s cubic-bezier(0.25,0.46,0.45,0.94)';
+    c.style.transform  = `translateY(${tr.top - cr.top}px)`;
+  });
+}
+
+function _onTodoPointerUp() {
+  if (!_todoDrag) return;
+
+  const { card, clone, currentOrder, slotRects, moved } = _todoDrag;
+
+  card.removeEventListener('pointermove',        _onTodoPointerMove);
+  card.removeEventListener('pointerup',          _onTodoPointerUp);
+  card.removeEventListener('pointercancel',      _onTodoPointerUp);
+  card.removeEventListener('lostpointercapture', _onTodoLostCapture);
+
+  if (!moved) {
+    clone.remove();
+    card.classList.remove('todo-card--ghost');
+    _todoDrag = null;
+    return;
+  }
+
+  // Animate clone landing on its final slot
+  const finalIdx = currentOrder.indexOf(card.dataset.id);
+  const fr       = slotRects[finalIdx];
+
+  clone.style.transition = 'left 0.2s ease, top 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease';
+  clone.style.left       = `${fr.left}px`;
+  clone.style.top        = `${fr.top}px`;
+  clone.style.transform  = 'scale(1)';
+  clone.style.boxShadow  = '0 4px 16px rgba(0,0,0,0.12)';
+
+  const thisDrag = _todoDrag;
+  setTimeout(() => {
+    clone.remove();
+    if (_todoDrag === thisDrag) {
+      _todoDrag = null;
+      const todos     = getTodos();
+      const reordered = currentOrder.map(id => todos.find(t => t.id === id)).filter(Boolean);
+      setTodos(reordered);
+      renderTodos();
+    }
+  }, 200);
+}
+
+function _onTodoLostCapture() {
+  // Fires only if pointerup/cancel never removed this listener — force cleanup
+  if (!_todoDrag || _todoDrag.card !== this) return;
+  const { card, clone } = _todoDrag;
+  card.removeEventListener('pointermove',   _onTodoPointerMove);
+  card.removeEventListener('pointerup',     _onTodoPointerUp);
+  card.removeEventListener('pointercancel', _onTodoPointerUp);
+  clone.remove();
+  card.classList.remove('todo-card--ghost');
+  document.querySelectorAll('.todo-card').forEach(c => {
+    c.style.transition = '';
+    c.style.transform  = '';
+  });
+  _todoDrag = null;
 }
