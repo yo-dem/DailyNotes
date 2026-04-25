@@ -2096,7 +2096,7 @@ body.todo-active .todo-list {
 
 .pages-list {
   width: 100%;
-  max-width: 760px;
+  max-width: 720px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -2107,10 +2107,8 @@ body.todo-active .todo-list {
 
 .page {
   position: relative;
-  /* Drive height first so aspect-ratio can compute a true portrait width */
-  height: min(calc(100vh - 180px), 1000px);
+  width: min(660px, calc(100% - 24px));
   aspect-ratio: 1 / 1.414;             /* A4 portrait */
-  max-width: 100%;
   background: #fffaf2;
   color: var(--text-dark);
   border-radius: 22px;
@@ -2134,6 +2132,8 @@ body.todo-active .todo-list {
   overflow: hidden;                     /* no internal scroll */
   white-space: pre-wrap;
   word-wrap: break-word;
+  user-select: text;
+  -webkit-user-select: text;
 }
 .page-editor.is-empty::before {
   content: attr(data-placeholder);
@@ -2296,9 +2296,11 @@ body.pages-active .page-toolbar { display: flex; }
 }
 .ptb-color-dot:hover { transform: scale(1.15); }
 
+.ptb-font-btn { font-size: 0.72rem; font-weight: 700; letter-spacing: -0.03em; }
+
 @media (max-width: 600px) {
   .pages-list { gap: 22px; padding: 8px 0 20px; }
-  .page { max-height: calc(100vh - 160px); border-radius: 18px; }
+  .page { width: min(480px, calc(100% - 16px)); border-radius: 18px; }
   .page-editor { padding: 36px 32px 56px; font-size: 1.05rem; }
   .page-meta { bottom: 12px; left: 18px; right: 18px; font-size: 0.66rem; }
   .page-toolbar { left: 8px; padding: 8px 6px; }

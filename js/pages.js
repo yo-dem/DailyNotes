@@ -24,7 +24,8 @@ function savePages(d, pages) {
 let _currentPages = null;
 let _saveTimer    = null;
 let _lastFocused  = null;
-let _currentColor = PAGE_COLORS[0];
+let _currentColor = '#d32f2f';
+let _currentFontSize = 3; // 1-7 maps to execCommand fontSize levels
 
 // ── Persistence ─────────────────────────────────────────
 function _scheduleSave() {
@@ -118,7 +119,7 @@ function renderPages() {
     const del = document.createElement('button');
     del.className = 'page-del';
     del.title     = 'Elimina pagina';
-    del.innerHTML = SVG.delete;
+    del.innerHTML = SVG.cross;
     del.addEventListener('click', () => _deletePage(idx));
 
     wrap.appendChild(editor);
@@ -296,6 +297,28 @@ function _wireToolbarOnce() {
     if (e.target.closest('#ptbColorPop') || e.target.closest('#ptbColor')) return;
     $colPop.classList.add('hidden');
   });
+
+  // Font-size buttons
+  const $fontInc = document.getElementById('ptbFontInc');
+  const $fontDec = document.getElementById('ptbFontDec');
+  if ($fontInc) {
+    $fontInc.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      _ensureFocus();
+      _currentFontSize = Math.min(7, _currentFontSize + 1);
+      document.execCommand('fontSize', false, String(_currentFontSize));
+      _persistFocused();
+    });
+  }
+  if ($fontDec) {
+    $fontDec.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      _ensureFocus();
+      _currentFontSize = Math.max(1, _currentFontSize - 1);
+      document.execCommand('fontSize', false, String(_currentFontSize));
+      _persistFocused();
+    });
+  }
 }
 
 function _ensureFocus() {

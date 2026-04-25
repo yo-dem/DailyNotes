@@ -197,8 +197,8 @@ document.addEventListener('keydown', e => {
     timePicker.close();
     actionSheet.close();
   }
-  if (e.key === 'ArrowLeft'  && !isInputFocused()) _changeDayAnimated(-1);
-  if (e.key === 'ArrowRight' && !isInputFocused()) _changeDayAnimated(+1);
+  if (e.key === 'ArrowLeft'  && !isInputFocused() && _activeViewId() === 'dashboard') _changeDayAnimated(-1);
+  if (e.key === 'ArrowRight' && !isInputFocused() && _activeViewId() === 'dashboard') _changeDayAnimated(+1);
 });
 
 // ── Responsive header on resize ────────────────────────
