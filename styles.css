@@ -2107,8 +2107,12 @@ body.todo-active .todo-list {
 
 .page {
   position: relative;
-  width: min(660px, calc(100% - 24px));
-  aspect-ratio: 1 / 1.414;             /* A4 portrait */
+  /* Height-first: explicit height → aspect-ratio computes width, not the reverse.
+     Width-first leaves height "preferred" so contenteditable can push it open.
+     clamp ensures a minimum of 860px even on short viewports (view scrolls). */
+  height: clamp(860px, calc(100vh - 40px), 1050px);
+  aspect-ratio: 1 / 1.414;             /* A4 portrait → width ≈ height / 1.414 */
+  max-width: calc(100% - 24px);
   background: #fffaf2;
   color: var(--text-dark);
   border-radius: 22px;
@@ -2239,6 +2243,11 @@ body.pages-active .page-toolbar { display: flex; }
 }
 .ptb-btn:hover  { background: rgba(255,255,255,0.3); }
 .ptb-btn:active { transform: scale(0.93); }
+.ptb-btn--active {
+  background: rgba(255,255,255,0.48);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.75);
+}
+.ptb-btn--active:hover { background: rgba(255,255,255,0.55); }
 .ptb-btn svg { width: 16px; height: 16px; display: block; }
 .ptb-btn b, .ptb-btn i, .ptb-btn s { font-style: inherit; }
 .ptb-btn i { font-style: italic; }
@@ -2300,7 +2309,7 @@ body.pages-active .page-toolbar { display: flex; }
 
 @media (max-width: 600px) {
   .pages-list { gap: 22px; padding: 8px 0 20px; }
-  .page { width: min(480px, calc(100% - 16px)); border-radius: 18px; }
+  .page { height: min(calc(100vh - 80px), 680px); border-radius: 18px; }
   .page-editor { padding: 36px 32px 56px; font-size: 1.05rem; }
   .page-meta { bottom: 12px; left: 18px; right: 18px; font-size: 0.66rem; }
   .page-toolbar { left: 8px; padding: 8px 6px; }

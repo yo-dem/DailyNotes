@@ -21,11 +21,13 @@ function savePages(d, pages) {
 }
 
 // In-memory source of truth for the currently-rendered view.
-let _currentPages = null;
-let _saveTimer    = null;
-let _lastFocused  = null;
-let _currentColor = '#d32f2f';
-let _currentFontSize = 3; // 1-7 maps to execCommand fontSize levels
+let _currentPages    = null;
+let _saveTimer       = null;
+let _lastFocused     = null;
+let _currentColor    = '#d32f2f';
+let _currentFontSize = 3;    // 1-7 execCommand fontSize levels
+let _pageZoom        = 1.0;  // CSS zoom applied to #pagesList
+let _busyReverting   = false; // guard against undo loop in overflow handler
 
 // ── Persistence ─────────────────────────────────────────
 function _scheduleSave() {
@@ -103,7 +105,26 @@ function renderPages() {
     editor.addEventListener('beforeinput', e => _onBeforeInput(e, idx, editor));
     editor.addEventListener('paste',   e => _onPaste(e, idx, editor));
     editor.addEventListener('keydown', e => _onKeyDown(e));
-    editor.addEventListener('input',   () => {
+    editor.addEventListener('input', () => {
+      if (_busyReverting) return;
+
+      // Visual-overflow guard: if the content is taller than the fixed page
+      // height, undo the change. textContent-based char counting misses empty
+      // lines (Enter presses insert block elements with 0 textContent length).
+      if (editor.scrollHeight > editor.clientHeight) {
+        _busyReverting = true;
+        document.execCommand('undo');
+        _busyReverting = false;
+        // Fallback if there's no undo history (e.g. very first keystroke)
+        if (editor.scrollHeight > editor.clientHeight) {
+          editor.innerHTML = page.content || '';
+        }
+        _refreshEditorState(wrap, editor);
+        page.content = editor.innerHTML;
+        _scheduleSave();
+        return;
+      }
+
       _refreshEditorState(wrap, editor);
       page.content = editor.innerHTML;
       _scheduleSave();
@@ -133,6 +154,8 @@ function renderPages() {
 
   _wireToolbarOnce();
   _refreshColorSwatch();
+  _applyPageZoom();
+  _refreshToolbarState();
 }
 
 // ── Char-limit handling ─────────────────────────────────
@@ -242,6 +265,46 @@ function _deletePage(idx) {
   });
 }
 
+// ── Toolbar state (active buttons + cursor color) ───────
+//
+// _cmdOverride: after a toolbar click, queryCommandState can't reflect the
+// typing-override state (it sees surrounding text, not future-char intent).
+// We store the toggled state here and use it until the cursor actually moves.
+// _blockSelChange: suppresses the selectionchange(s) fired by execCommand
+// itself, so they don't immediately clear the override we just set.
+const _cmdOverride  = {};   // 'bold'|'italic'|'strikeThrough' → true/false
+let   _blockSelChange = false;
+
+function _refreshToolbarState() {
+  const $tb = document.getElementById('pageToolbar');
+  if (!$tb) return;
+
+  const sel      = window.getSelection();
+  const inEditor = !!(sel && sel.anchorNode &&
+    sel.anchorNode.parentElement?.closest('.page-editor'));
+
+  ['bold', 'italic', 'strikeThrough'].forEach(cmd => {
+    const btn = $tb.querySelector(`[data-cmd="${cmd}"]`);
+    if (!btn) return;
+    const active = cmd in _cmdOverride
+      ? _cmdOverride[cmd]
+      : !!(inEditor && document.queryCommandState(cmd));
+    btn.classList.toggle('ptb-btn--active', active);
+  });
+
+  const sw = document.getElementById('ptbColorSwatch');
+  if (sw) {
+    const cursorColor = inEditor ? document.queryCommandValue('foreColor') : '';
+    sw.style.background = (cursorColor && cursorColor !== 'false') ? cursorColor : _currentColor;
+  }
+}
+
+// ── Page zoom ────────────────────────────────────────────
+function _applyPageZoom() {
+  const list = document.getElementById('pagesList');
+  if (list) list.style.zoom = _pageZoom;
+}
+
 // ── Toolbar ─────────────────────────────────────────────
 let _toolbarWired = false;
 function _wireToolbarOnce() {
@@ -261,8 +324,17 @@ function _wireToolbarOnce() {
       e.preventDefault();
       const cmd = btn.dataset.cmd;
       _ensureFocus();
+      const wasActive = document.queryCommandState(cmd);
       document.execCommand(cmd, false, null);
       _persistFocused();
+      // For toggle commands, track the intended state so _refreshToolbarState
+      // doesn't get overridden by the selectionchange execCommand triggers.
+      if (cmd === 'bold' || cmd === 'italic' || cmd === 'strikeThrough') {
+        _cmdOverride[cmd] = !wasActive;
+        _blockSelChange   = true;
+        _refreshToolbarState();
+        requestAnimationFrame(() => { _blockSelChange = false; });
+      }
     });
   });
 
@@ -319,6 +391,32 @@ function _wireToolbarOnce() {
       _persistFocused();
     });
   }
+
+  // Zoom buttons
+  const $zoomIn  = document.getElementById('ptbZoomIn');
+  const $zoomOut = document.getElementById('ptbZoomOut');
+  if ($zoomIn)  $zoomIn.innerHTML  = SVG.zoomIn;
+  if ($zoomOut) $zoomOut.innerHTML = SVG.zoomOut;
+  $zoomIn?.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    _pageZoom = Math.min(2.0, parseFloat((_pageZoom + 0.15).toFixed(2)));
+    _applyPageZoom();
+  });
+  $zoomOut?.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    _pageZoom = Math.max(0.4, parseFloat((_pageZoom - 0.15).toFixed(2)));
+    _applyPageZoom();
+  });
+
+  // Track cursor formatting → refresh button active states.
+  // When _blockSelChange is true the event was caused by our own execCommand,
+  // not by real cursor movement, so we skip it (override is already correct).
+  document.addEventListener('selectionchange', () => {
+    if (_blockSelChange) return;
+    // Cursor moved for real → typing-override is gone, use live queryCommandState
+    Object.keys(_cmdOverride).forEach(k => delete _cmdOverride[k]);
+    _refreshToolbarState();
+  });
 }
 
 function _ensureFocus() {
