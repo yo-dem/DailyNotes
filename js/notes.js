@@ -109,12 +109,15 @@ function addNote() {
 }
 
 // ── Transform ──────────────────────────────────────────
-function _applyTransform() {
+function _applyTransform(smooth = false) {
   const $canvas = document.getElementById('notesCanvas');
   const $wrap   = document.getElementById('notesCanvasWrap');
   const $pct    = document.getElementById('nzbPct');
 
   if ($canvas) {
+    $canvas.style.transition = smooth
+      ? 'transform 0.13s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+      : '';
     $canvas.style.transform = `translate(${_panX}px,${_panY}px) scale(${_zoom})`;
   }
   if ($wrap) {
@@ -129,14 +132,14 @@ function _applyTransform() {
 }
 
 // ── Zoom helpers ───────────────────────────────────────
-function _zoomAround(cx, cy, newZoom) {
+function _zoomAround(cx, cy, newZoom, smooth = false) {
   newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, newZoom));
   if (newZoom === _zoom) return;
   const r = newZoom / _zoom;
   _panX = cx - (cx - _panX) * r;
   _panY = cy - (cy - _panY) * r;
   _zoom = newZoom;
-  _applyTransform();
+  _applyTransform(smooth);
 }
 
 function _zoomCenter(delta) {
@@ -224,19 +227,14 @@ function _initInteraction() {
   $wrap.addEventListener('pointerup',     _endPointer);
   $wrap.addEventListener('pointercancel', _endPointer);
 
-  // ── Wheel: trackpad pan / pinch gesture / Ctrl+scroll zoom ──
+  // ── Wheel: always zoom, centred on cursor ──
   $wrap.addEventListener('wheel', e => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.ctrlKey) {
-      // macOS pinch gesture or Ctrl+wheel
-      const factor = Math.pow(0.992, e.deltaY);
-      _zoomAround(e.clientX, e.clientY, _zoom * factor);
-    } else {
-      _panX -= e.deltaX;
-      _panY -= e.deltaY;
-      _applyTransform();
-    }
+    const normalised = e.deltaMode === 1 ? e.deltaY * 30
+                     : e.deltaMode === 2 ? e.deltaY * 300
+                     : e.deltaY;
+    _zoomAround(e.clientX, e.clientY, _zoom * Math.pow(0.992, normalised), true);
   }, { passive: false });
 
   // Hide handles when pointer leaves the canvas entirely
