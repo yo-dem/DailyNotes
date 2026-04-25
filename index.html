@@ -38,6 +38,21 @@
     <!-- Pagine (note multipagina) -->
     <div id="pagesView" class="view">
       <div class="pages-list" id="pagesList"></div>
+      <div class="page-toolbar" id="pageToolbar">
+        <button class="ptb-btn" data-cmd="bold" title="Grassetto" aria-label="Grassetto"><b>B</b></button>
+        <button class="ptb-btn" data-cmd="italic" title="Corsivo" aria-label="Corsivo"><i>I</i></button>
+        <button class="ptb-btn" data-cmd="strikeThrough" title="Sbarrato" aria-label="Sbarrato"><s>S</s></button>
+        <div class="ptb-sep"></div>
+        <div class="ptb-color-wrap">
+          <button class="ptb-btn ptb-color-btn" id="ptbColor" title="Colore testo" aria-label="Colore testo">
+            <span class="ptb-color-swatch" id="ptbColorSwatch"></span>
+          </button>
+          <div class="ptb-color-pop hidden" id="ptbColorPop"></div>
+        </div>
+        <div class="ptb-sep"></div>
+        <button class="ptb-btn" data-cmd="insertUnorderedList" title="Elenco puntato" aria-label="Elenco puntato"></button>
+        <button class="ptb-btn" data-cmd="insertOrderedList" title="Elenco numerato" aria-label="Elenco numerato"></button>
+      </div>
     </div>
 
     <!-- Note -->
