@@ -2946,9 +2946,19 @@ body.pages-active .page-toolbar { display: flex; }
 .tm-cl-text {
   flex: 1;
   font-size: 0.85rem;
+  font-family: inherit;
   color: #1a1a2e;
   line-height: 1.4;
+  background: none;
+  border: none;
+  border-bottom: 1px solid transparent;
+  outline: none;
+  padding: 1px 2px;
+  user-select: text;
+  -webkit-user-select: text;
+  min-width: 0;
 }
+.tm-cl-text:focus { border-bottom-color: rgba(0,0,0,0.35); }
 .tm-cl-row.done .tm-cl-text {
   text-decoration: line-through;
   color: rgba(0,0,0,0.4);

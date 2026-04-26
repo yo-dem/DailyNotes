@@ -763,9 +763,14 @@ function _renderTmChecklist() {
     const chk = document.createElement('button');
     chk.type = 'button';
     chk.className = 'tm-cl-check';
-    const txt = document.createElement('span');
-    txt.className   = 'tm-cl-text';
-    txt.textContent = item.text;
+    const txt = document.createElement('input');
+    txt.type      = 'text';
+    txt.className = 'tm-cl-text';
+    txt.value     = item.text;
+    txt.autocomplete = 'off';
+    txt.spellcheck   = false;
+    txt.addEventListener('input', () => { item.text = txt.value; });
+    txt.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); txt.blur(); } });
     const del = document.createElement('button');
     del.type = 'button';
     del.className   = 'tm-cl-del';
