@@ -61,6 +61,36 @@
       </div>
     </div>
 
+    <!-- Task Manager (Kanban) -->
+    <div id="taskView" class="view">
+      <div class="kanban-board">
+        <div class="kanban-col" data-col="todo">
+          <div class="kanban-col-header">
+            <span class="kanban-col-dot" style="background:#0288D1"></span>
+            <span class="kanban-col-title">To Do</span>
+            <button class="kanban-add-btn" title="Aggiungi task">+</button>
+          </div>
+          <div class="kanban-cards" id="kanban-todo" data-col="todo"></div>
+        </div>
+        <div class="kanban-col" data-col="doing">
+          <div class="kanban-col-header">
+            <span class="kanban-col-dot" style="background:#E65100"></span>
+            <span class="kanban-col-title">Doing</span>
+            <button class="kanban-add-btn" title="Aggiungi task">+</button>
+          </div>
+          <div class="kanban-cards" id="kanban-doing" data-col="doing"></div>
+        </div>
+        <div class="kanban-col" data-col="done">
+          <div class="kanban-col-header">
+            <span class="kanban-col-dot" style="background:#2E7D32"></span>
+            <span class="kanban-col-title">Done</span>
+            <button class="kanban-add-btn" title="Aggiungi task">+</button>
+          </div>
+          <div class="kanban-cards" id="kanban-done" data-col="done"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Note -->
     <div id="notesView" class="view">
       <div class="notes-canvas-wrap" id="notesCanvasWrap">
@@ -92,6 +122,24 @@
     <button class="back-btn" id="backBtn">Dashboard</button>
   </div>
 
+  <!-- Modal: Task Editor -->
+  <div class="modal-overlay hidden" id="taskModal">
+    <div class="modal modal-task">
+      <input class="tm-title" id="tmTitle" type="text" placeholder="Titolo task…" autocomplete="off" spellcheck="false" />
+      <div class="tm-tags-wrap">
+        <div class="tm-tag-list" id="tmTagList"></div>
+        <input class="tm-tag-input" id="tmTagInput" type="text" placeholder="Aggiungi tag (Invio)…" autocomplete="off" />
+      </div>
+      <textarea id="tmBody" class="tm-body" placeholder="Descrizione…"></textarea>
+      <div class="tm-colors" id="tmColors"></div>
+      <div class="modal-actions">
+        <button id="tmSave">Salva</button>
+        <button id="tmDelete" class="btn-danger hidden">Elimina</button>
+        <button id="tmCancel" class="btn-secondary">Annulla</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal: Note Editor -->
   <div class="modal-overlay hidden" id="noteModal">
     <div class="modal modal-note">
@@ -119,6 +167,7 @@
   <script src="js/dashboard.js"></script>
   <script src="js/notes.js"></script>
   <script src="js/pages.js"></script>
+  <script src="js/tasks.js"></script>
   <script src="js/app.js"></script>
   <script src="js/reminder.js"></script>
 </body>

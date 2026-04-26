@@ -33,7 +33,7 @@ function navigateTo(view) {
   document.getElementById(`${view}View`).classList.add('view--active');
 
   const onDash = view === 'dashboard';
-  const showFab = view === 'todo' || view === 'notes' || view === 'pages';
+  const showFab = view === 'todo' || view === 'notes' || view === 'pages' || view === 'task';
   document.getElementById('prevDay').classList.toggle('hidden', !onDash);
   document.getElementById('nextDay').classList.toggle('hidden', !onDash);
   document.getElementById('bottomDock').classList.toggle('hidden', onDash);
@@ -41,11 +41,13 @@ function navigateTo(view) {
   document.body.classList.toggle('notes-active', view === 'notes');
   document.body.classList.toggle('todo-active',  view === 'todo');
   document.body.classList.toggle('pages-active', view === 'pages');
+  document.body.classList.toggle('task-active',  view === 'task');
 
   if (view === 'dashboard') renderDashboard();
   if (view === 'todo')      renderTodos();
   if (view === 'notes')     renderNotes();
   if (view === 'pages')     renderPages();
+  if (view === 'task')      renderKanban();
 }
 
 function renderAll() {
@@ -55,6 +57,7 @@ function renderAll() {
   if (v === 'todo')      renderTodos();
   if (v === 'notes')     renderNotes();
   if (v === 'pages')     renderPages();
+  if (v === 'task')      renderKanban();
 }
 
 // ── Navigation ─────────────────────────────────────────
@@ -85,6 +88,7 @@ document.getElementById('addTodo').addEventListener('click', () => {
   if (v === 'todo')  addTodo();
   if (v === 'notes') addNote();
   if (v === 'pages') addPage();
+  if (v === 'task')  addKanbanTask();
 });
 
 // ── Animated day change (shared by swipe + wheel + arrows) ─
@@ -124,7 +128,7 @@ document.addEventListener('touchstart', e => {
 }, { passive: true });
 
 document.addEventListener('touchend', e => {
-  if (['notes', 'todo', 'pages'].includes(_activeViewId())) return;
+  if (['notes', 'todo', 'pages', 'task'].includes(_activeViewId())) return;
   if (_swipeOnTile) return;
   const dx = e.changedTouches[0].clientX - _swipeX;
   const dy = e.changedTouches[0].clientY - _swipeY;
@@ -139,7 +143,7 @@ let _wheelCooling = false;
 let _wheelCoolPrev = 0; // last deltaX seen during cooling (to detect re-acceleration)
 
 document.addEventListener('wheel', e => {
-  if (['notes', 'todo', 'pages'].includes(_activeViewId())) return;
+  if (['notes', 'todo', 'pages', 'task'].includes(_activeViewId())) return;
   if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) * 0.8) return;
   e.preventDefault();
   if (_dayChangeBusy) return;

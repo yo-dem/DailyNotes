@@ -3,9 +3,10 @@
 const TILES_KEY = 'tiles_order';
 
 const TILE_DEFS = {
-  todo:   { label: 'Todo',    sub: () => _todoSubtitle(),   icon: 'tileCheck',  accent: 3, view: 'todo' },
-  postit: { label: 'Post-it', sub: () => _postitSubtitle(), icon: 'tilePostit', accent: 5, view: 'notes' },
-  notes:  { label: 'Note',    sub: () => _notesSubtitle(),  icon: 'tileNotes',  accent: 1, view: 'pages' },
+  todo:   { label: 'Todo',    sub: () => _todoSubtitle(),    icon: 'tileCheck',  accent: 3, view: 'todo'  },
+  postit: { label: 'Post-it', sub: () => _postitSubtitle(),  icon: 'tilePostit', accent: 5, view: 'notes' },
+  notes:  { label: 'Note',    sub: () => _notesSubtitle(),   icon: 'tileNotes',  accent: 1, view: 'pages' },
+  kanban: { label: 'Task',    sub: () => _kanbanSubtitle(),  icon: 'tileKanban', accent: 2, view: 'task'  },
 };
 
 function _todoSubtitle() {
