@@ -46,12 +46,12 @@ function renderKanban() {
     if (!el) return;
     el.innerHTML = '';
     tasks.filter(t => t.col === col.id)
-         .forEach(t => el.appendChild(_buildCard(t)));
+         .forEach(t => el.appendChild(_buildKanbanCard(t)));
   });
   _wireKanbanOnce();
 }
 
-function _buildCard(task) {
+function _buildKanbanCard(task) {
   const colIdx = KANBAN_COLS.findIndex(c => c.id === task.col);
   const color  = task.color || TASK_COLORS[1];
 
