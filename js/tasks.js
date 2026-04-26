@@ -1,8 +1,9 @@
 'use strict';
 
-const KANBAN_KEY      = 'kanban_board';
-const KANBAN_COLS_KEY = 'kanban_cols';
-const KANBAN_TAGS_KEY = 'kanban_tags';
+const KANBAN_KEY           = 'kanban_board';
+const KANBAN_COLS_KEY      = 'kanban_cols';
+const KANBAN_TAGS_KEY      = 'kanban_tags';
+const KANBAN_ASSIGNEES_KEY = 'kanban_assignees';
 const TASK_COLORS     = ['#7B1FA2','#0288D1','#E65100','#2E7D32','#C2185B','#F57F17'];
 
 const _DEFAULT_COLS = [
@@ -19,10 +20,7 @@ function loadKanban() {
     return Array.isArray(arr) ? arr : [];
   } catch { return []; }
 }
-
-function _saveKanban(tasks) {
-  localStorage.setItem(KANBAN_KEY, JSON.stringify(tasks));
-}
+function _saveKanban(tasks) { localStorage.setItem(KANBAN_KEY, JSON.stringify(tasks)); }
 
 function loadCols() {
   try {
@@ -32,10 +30,7 @@ function loadCols() {
   } catch {}
   return _DEFAULT_COLS.map(c => ({ ...c }));
 }
-
-function _saveCols(cols) {
-  localStorage.setItem(KANBAN_COLS_KEY, JSON.stringify(cols));
-}
+function _saveCols(cols) { localStorage.setItem(KANBAN_COLS_KEY, JSON.stringify(cols)); }
 
 function loadTags() {
   try {
@@ -44,12 +39,18 @@ function loadTags() {
     return Array.isArray(arr) ? arr : [];
   } catch { return []; }
 }
+function _saveTags(tags) { localStorage.setItem(KANBAN_TAGS_KEY, JSON.stringify(tags)); }
 
-function _saveTags(tags) {
-  localStorage.setItem(KANBAN_TAGS_KEY, JSON.stringify(tags));
+function loadAssignees() {
+  try {
+    const raw = localStorage.getItem(KANBAN_ASSIGNEES_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch { return []; }
 }
+function _saveAssignees(names) { localStorage.setItem(KANBAN_ASSIGNEES_KEY, JSON.stringify(names)); }
 
-// ── Tag colour (repo lookup, fallback to hash) ───────────
+// ── Tag colour ───────────────────────────────────────────
 function _tagColor(tagName) {
   const found = loadTags().find(t => t.name === tagName);
   if (found) return found.color;
@@ -59,15 +60,18 @@ function _tagColor(tagName) {
 }
 
 // ── Modal state ──────────────────────────────────────────
-let _editingId    = null;
-let _editingCol   = 'todo';
-let _editingTags  = [];
-let _editingColor = TASK_COLORS[1];
-let _newTagColor  = TASK_COLORS[0];
+let _editingId        = null;
+let _editingCol       = 'todo';
+let _editingTags      = [];
+let _editingColor     = TASK_COLORS[1];
+let _newTagColor      = TASK_COLORS[0];
+let _editingChecklist  = [];
+let _editingAssignees  = [];
 
 // ── Drag state ───────────────────────────────────────────
-let _dragId  = null;   // card drag (HTML5)
-let _colDrag = null;   // column drag (pointer)
+let _cardDrag = null;
+let _colDrag  = null;
+let _dblTap   = { cardId: null, time: 0 };
 
 // ── Render ───────────────────────────────────────────────
 function renderKanban() {
@@ -76,26 +80,25 @@ function renderKanban() {
 
   const cols  = loadCols();
   const tasks = loadKanban();
-
   $board.innerHTML = '';
 
   cols.forEach(col => {
     const colEl = document.createElement('div');
-    colEl.className  = 'kanban-col';
+    colEl.className   = 'kanban-col';
     colEl.dataset.col = col.id;
 
     const header = document.createElement('div');
     header.className = 'kanban-col-header';
     header.innerHTML = `
       <span class="kanban-col-grip" title="Trascina sezione">⠿</span>
-      <span class="kanban-col-dot" style="background:${col.color}"></span>
+      <span class="kanban-col-dot" style="background:${col.color}" title="Cambia colore"></span>
       <span class="kanban-col-title" contenteditable="true" spellcheck="false">${escHtml(col.label)}</span>
       <button class="kanban-del-btn" title="Elimina sezione">×</button>
     `;
     colEl.appendChild(header);
 
     const cardsEl = document.createElement('div');
-    cardsEl.className  = 'kanban-cards';
+    cardsEl.className   = 'kanban-cards';
     cardsEl.dataset.col = col.id;
     colEl.appendChild(cardsEl);
 
@@ -105,7 +108,7 @@ function renderKanban() {
     colEl.appendChild(footer);
 
     tasks.filter(t => t.col === col.id)
-         .forEach(t => cardsEl.appendChild(_buildKanbanCard(t, cols)));
+         .forEach(t => cardsEl.appendChild(_buildKanbanCard(t)));
 
     // Title inline editing
     const titleEl = header.querySelector('.kanban-col-title');
@@ -120,7 +123,13 @@ function renderKanban() {
       if (c && c.label !== newLabel) { c.label = newLabel; _saveCols(saved); }
     });
 
-    // Add-task button (footer) — creates immediately, no modal
+    // Dot → colour picker
+    header.querySelector('.kanban-col-dot').addEventListener('click', e => {
+      e.stopPropagation();
+      _openColColorPicker(e.currentTarget, col.id);
+    });
+
+    // Add-task button
     footer.querySelector('.kanban-add-btn').addEventListener('click', () => {
       const all = loadKanban();
       all.push({ id: uid(), col: col.id, title: '', body: '', tags: [], color: TASK_COLORS[1] });
@@ -128,17 +137,14 @@ function renderKanban() {
       renderKanban();
     });
 
-    // Delete column button
+    // Delete column
     header.querySelector('.kanban-del-btn').addEventListener('click', () => {
       const cardCount = loadKanban().filter(t => t.col === col.id).length;
       const msg = cardCount
         ? `La sezione "${col.label}" e ${cardCount === 1 ? 'il task al suo interno' : `i ${cardCount} task al suo interno`} verranno eliminati definitivamente.`
         : `La sezione "${col.label}" verrà eliminata definitivamente.`;
       showConfirm({
-        title: 'Eliminare sezione?',
-        message: msg,
-        confirmLabel: 'Elimina',
-        danger: true,
+        title: 'Eliminare sezione?', message: msg, confirmLabel: 'Elimina', danger: true,
         onConfirm: () => {
           _saveCols(loadCols().filter(c => c.id !== col.id));
           _saveKanban(loadKanban().filter(t => t.col !== col.id));
@@ -150,159 +156,114 @@ function renderKanban() {
     // Column drag handle
     header.querySelector('.kanban-col-grip').addEventListener('pointerdown', _onColPointerDown);
 
-    // Card drop zone
-    cardsEl.addEventListener('dragover', e => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      cardsEl.classList.add('drag-over');
-    });
-    cardsEl.addEventListener('dragleave', e => {
-      if (!cardsEl.contains(e.relatedTarget)) cardsEl.classList.remove('drag-over');
-    });
-    cardsEl.addEventListener('drop', e => {
-      e.preventDefault();
-      cardsEl.classList.remove('drag-over');
-      if (!_dragId) return;
-      const all = loadKanban();
-      const t   = all.find(x => x.id === _dragId);
-      if (t && t.col !== col.id) { t.col = col.id; _saveKanban(all); renderKanban(); }
-    });
-
     $board.appendChild(colEl);
   });
 }
 
 // ── Card builder ─────────────────────────────────────────
-function _buildKanbanCard(task, cols) {
-  if (!cols) cols = loadCols();
-  const colIdx = cols.findIndex(c => c.id === task.col);
-  const color  = task.color || TASK_COLORS[1];
+function _buildKanbanCard(task) {
+  const color = task.color || TASK_COLORS[1];
 
   const card = document.createElement('div');
   card.className  = 'kcard';
   card.dataset.id = task.id;
-  card.draggable  = true;
 
   const tagsHtml = (task.tags || [])
     .map(t => `<span class="kcard-tag" style="background:${_tagColor(t)}">${escHtml(t)}</span>`)
     .join('');
 
+  const assignees    = task.assignees || [];
+  const assigneeText = assignees.length ? assignees.map(escHtml).join(' · ') : 'Tutti';
+  const footerHtml   = `
+    <div class="kcard-footer">
+      <svg class="kcard-footer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+      </svg>
+      <span class="kcard-footer-names${assignees.length ? ' assigned' : ''}">${assigneeText}</span>
+    </div>`;
+
+  const cl = task.checklist || [];
+  const clDone = cl.filter(i => i.done).length;
+  const clHtml = cl.length ? `
+    <div class="kcard-checklist">
+      <div class="kcard-cl-bar"><div class="kcard-cl-fill" style="width:${Math.round(clDone / cl.length * 100)}%"></div></div>
+      ${cl.map(item => `
+        <div class="kcard-cl-row${item.done ? ' done' : ''}" data-item-id="${item.id}">
+          <span class="kcard-cl-box"></span>
+          <span class="kcard-cl-text">${escHtml(item.text)}</span>
+        </div>`).join('')}
+    </div>` : '';
+
   card.innerHTML = `
     <button class="kcard-del" title="Elimina">×</button>
     <div class="kcard-stripe" style="background:${color}"></div>
     <div class="kcard-content">
-      <span class="kcard-grip" title="Riordina">⠿</span>
-      <div class="kcard-text">
-        <div class="kcard-title">${escHtml(task.title || 'Senza titolo')}</div>
-        ${tagsHtml ? `<div class="kcard-tags">${tagsHtml}</div>` : ''}
-        ${task.body ? `<div class="kcard-desc">${escHtml(task.body)}</div>` : ''}
-      </div>
+      <div class="kcard-title">${escHtml(task.title || 'Senza titolo')}</div>
+      ${tagsHtml ? `<div class="kcard-tags">${tagsHtml}</div>` : ''}
+      ${task.body ? `<div class="kcard-desc">${escHtml(task.body)}</div>` : ''}
     </div>
-    <div class="kcard-actions">
-      <button class="kcard-mv" data-dir="-1" ${colIdx <= 0 ? 'disabled' : ''} title="Colonna precedente">←</button>
-      <button class="kcard-mv" data-dir="1"  ${colIdx >= cols.length - 1 ? 'disabled' : ''} title="Colonna successiva">→</button>
-    </div>
+    ${clHtml}
+    ${footerHtml}
   `;
-
-  // Double-click → edit
-  card.addEventListener('dblclick', e => {
-    if (e.target.closest('.kcard-del, .kcard-mv')) return;
-    _openModal(task.id);
-  });
 
   card.querySelector('.kcard-del').addEventListener('click', e => {
     e.stopPropagation();
     showConfirm({
       title: 'Eliminare task?',
       message: `"${escHtml(task.title || 'Senza titolo')}" verrà rimosso definitivamente.`,
-      confirmLabel: 'Elimina',
-      danger: true,
-      onConfirm: () => {
-        _saveKanban(loadKanban().filter(t => t.id !== task.id));
-        renderKanban();
-      },
+      confirmLabel: 'Elimina', danger: true,
+      onConfirm: () => { _saveKanban(loadKanban().filter(t => t.id !== task.id)); renderKanban(); },
     });
   });
 
-  card.querySelectorAll('.kcard-mv').forEach(btn => {
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      const cs = loadCols();
-      const ci = cs.findIndex(c => c.id === task.col);
-      const ni = ci + parseInt(btn.dataset.dir);
-      if (ni < 0 || ni >= cs.length) return;
-      const all = loadKanban();
-      const t   = all.find(x => x.id === task.id);
-      if (t) { t.col = cs[ni].id; _saveKanban(all); renderKanban(); }
-    });
-  });
-
-  card.querySelector('.kcard-grip').addEventListener('pointerdown', _onCardPointerDown);
-
-  card.addEventListener('dragstart', e => {
-    if (_cardDrag) { e.preventDefault(); return; }
-    _dragId = task.id;
-    requestAnimationFrame(() => card.classList.add('dragging'));
-    e.dataTransfer.effectAllowed = 'move';
-  });
-  card.addEventListener('dragend', () => {
-    card.classList.remove('dragging');
-    _dragId = null;
-    document.querySelectorAll('.kanban-cards').forEach(c => c.classList.remove('drag-over'));
-  });
+  // Unified pointer drag: whole card surface
+  card.addEventListener('pointerdown', _onCardPointerDown);
 
   return card;
 }
 
-// ── Card drag – within-column reorder (pointer-based) ────
-let _cardDrag = null;
-
+// ── Card drag – unified within-col & cross-col ───────────
 function _onCardPointerDown(e) {
   if (e.button !== 0) return;
   if (_cardDrag || _colDrag) return;
+  if (e.target.closest('.kcard-del')) return;
   e.preventDefault();
 
-  const card     = e.currentTarget.closest('.kcard');
-  const cardsEl  = card.closest('.kanban-cards');
-  const colId    = cardsEl.dataset.col;
-  const cardEls  = [...cardsEl.querySelectorAll('.kcard')];
+  const card   = e.currentTarget;
+  const $board = document.getElementById('kanbanBoard');
 
-  cardEls.forEach(c => { c.style.transition = 'none'; c.style.transform = ''; });
-  const slotRects = cardEls.map(c => {
-    const r = c.getBoundingClientRect();
-    return { left: r.left, top: r.top, width: r.width, height: r.height };
+  // Snapshot all columns and their cards
+  const colData = [...$board.querySelectorAll('.kanban-col')].map(colEl => {
+    const cardsEl = colEl.querySelector('.kanban-cards');
+    const cardEls = [...cardsEl.querySelectorAll('.kcard')];
+    cardEls.forEach(c => { c.style.transition = 'none'; c.style.transform = ''; });
+    const colRect   = colEl.getBoundingClientRect();
+    const slotRects = cardEls.map(c => {
+      const r = c.getBoundingClientRect();
+      return { left: r.left, top: r.top, width: r.width, height: r.height };
+    });
+    return { colId: colEl.dataset.col, colEl, cardsEl, cardEls, colRect, slotRects };
   });
 
-  const srcIdx = cardEls.indexOf(card);
-  const sr     = slotRects[srcIdx];
+  const srcColId   = card.closest('.kanban-col').dataset.col;
+  const srcColData = colData.find(cd => cd.colId === srcColId);
+  const srcIdx     = srcColData.cardEls.indexOf(card);
+  const sr         = srcColData.slotRects[srcIdx];
 
   const clone = card.cloneNode(true);
   Object.assign(clone.style, {
-    position:      'fixed',
-    left:          `${sr.left}px`,
-    top:           `${sr.top}px`,
-    width:         `${sr.width}px`,
-    height:        `${sr.height}px`,
-    margin:        '0',
-    zIndex:        '2000',
-    pointerEvents: 'none',
-    transition:    'transform 0.15s ease, box-shadow 0.15s ease',
-    transform:     'scale(1.03)',
-    boxShadow:     '0 12px 36px rgba(0,0,0,0.28)',
+    position: 'fixed', left: `${sr.left}px`, top: `${sr.top}px`,
+    width: `${sr.width}px`, height: `${sr.height}px`,
+    margin: '0', zIndex: '2000', pointerEvents: 'none',
+    transform: 'scale(1.03)', boxShadow: '0 12px 36px rgba(0,0,0,0.28)',
   });
   document.body.appendChild(clone);
   card.classList.add('kcard--ghost');
 
-  const origOrder = loadKanban().filter(t => t.col === colId).map(t => t.id);
-
   _cardDrag = {
-    card, clone, cardsEl, colId,
-    srcIdx, slotRects, origOrder,
-    nearestIdx:   srcIdx,
-    currentOrder: [...origOrder],
-    ox: e.clientX - sr.left,
-    oy: e.clientY - sr.top,
-    moved: false,
+    card, clone, colData, srcColData, srcColId, srcIdx,
+    targetColId: srcColId, nearestIdx: srcIdx, currentOrder: null,
+    ox: e.clientX - sr.left, oy: e.clientY - sr.top, moved: false,
   };
 
   document.addEventListener('pointermove',   _onCardPointerMove);
@@ -312,89 +273,198 @@ function _onCardPointerDown(e) {
 
 function _onCardPointerMove(e) {
   if (!_cardDrag) return;
-  const { clone, slotRects, srcIdx, origOrder, ox, oy, card } = _cardDrag;
+  const { clone, colData, srcColData, srcColId, srcIdx, ox, oy, card } = _cardDrag;
+  const sr = srcColData.slotRects[srcIdx];
 
   const x = e.clientX - ox;
   const y = e.clientY - oy;
 
   if (!_cardDrag.moved) {
-    const dy = e.clientY - (slotRects[srcIdx].top + oy);
-    if (Math.abs(dy) < 8) return;
+    if (Math.hypot(e.clientX - (sr.left + ox), e.clientY - (sr.top + oy)) < 8) return;
     _cardDrag.moved = true;
   }
 
   clone.style.left = `${x}px`;
   clone.style.top  = `${y}px`;
 
-  const cy = y + slotRects[srcIdx].height / 2;
+  const cx = x + sr.width  / 2;
+  const cy = y + sr.height / 2;
 
-  let nearestIdx = srcIdx;
+  // Which column is the clone over?
+  let targetCD = colData.find(cd => cx >= cd.colRect.left && cx <= cd.colRect.right);
+  if (!targetCD) return;
+
+  const targetColId    = targetCD.colId;
+  const prevTargetColId = _cardDrag.targetColId;
+
+  // Nearest insertion index in target column
+  let nearestIdx = targetCD.cardEls.length;
   let minDist    = Infinity;
-  slotRects.forEach((r, i) => {
+  targetCD.slotRects.forEach((r, i) => {
+    // Skip the ghost card's own slot when same column
+    if (targetColId === srcColId && i === srcIdx) return;
     const d = Math.abs(cy - (r.top + r.height / 2));
     if (d < minDist) { minDist = d; nearestIdx = i; }
   });
 
-  if (nearestIdx === _cardDrag.nearestIdx) return;
-  _cardDrag.nearestIdx = nearestIdx;
+  if (targetColId === _cardDrag.targetColId && nearestIdx === _cardDrag.nearestIdx) return;
 
-  const newOrder = [...origOrder];
-  const [moved]  = newOrder.splice(srcIdx, 1);
-  newOrder.splice(nearestIdx, 0, moved);
-  _cardDrag.currentOrder = newOrder;
+  // Restore previous target column's cards when switching columns
+  if (prevTargetColId !== targetColId) {
+    const prevCD = colData.find(cd => cd.colId === prevTargetColId);
+    if (prevCD) {
+      prevCD.cardEls.forEach(c => {
+        if (c !== card) { c.style.transition = 'transform 0.18s ease'; c.style.transform = ''; }
+      });
+    }
+  }
 
-  [..._cardDrag.cardsEl.querySelectorAll('.kcard')].forEach((c, domIdx) => {
-    if (c === card) return;
-    const targetIdx = newOrder.indexOf(c.dataset.id);
-    if (targetIdx === -1) return;
-    const tr = slotRects[targetIdx];
-    const cr = slotRects[domIdx];
-    c.style.transition = 'transform 0.2s cubic-bezier(0.25,0.46,0.45,0.94)';
-    c.style.transform  = `translateY(${tr.top - cr.top}px)`;
-  });
+  _cardDrag.targetColId = targetColId;
+  _cardDrag.nearestIdx  = nearestIdx;
+
+  if (targetColId === srcColId) {
+    // Within-column: reorder preview
+    const origIds  = srcColData.cardEls.map(c => c.dataset.id);
+    const newOrder = [...origIds];
+    const [moved]  = newOrder.splice(srcIdx, 1);
+    newOrder.splice(nearestIdx, 0, moved);
+    _cardDrag.currentOrder = newOrder;
+
+    srcColData.cardEls.forEach((c, domIdx) => {
+      if (c === card) return;
+      const tIdx = newOrder.indexOf(c.dataset.id);
+      if (tIdx === -1) return;
+      const tr = srcColData.slotRects[tIdx];
+      const cr = srcColData.slotRects[domIdx];
+      c.style.transition = 'transform 0.2s cubic-bezier(0.25,0.46,0.45,0.94)';
+      c.style.transform  = `translateY(${tr.top - cr.top}px)`;
+    });
+  } else {
+    // Cross-column: restore source, open gap in target
+    srcColData.cardEls.forEach(c => {
+      if (c !== card) { c.style.transition = 'transform 0.18s ease'; c.style.transform = ''; }
+    });
+    const shiftAmount = sr.height + 8;
+    targetCD.cardEls.forEach((c, i) => {
+      c.style.transition = 'transform 0.2s cubic-bezier(0.25,0.46,0.45,0.94)';
+      c.style.transform  = i >= nearestIdx ? `translateY(${shiftAmount}px)` : '';
+    });
+    _cardDrag.currentOrder = null;
+  }
 }
 
 function _onCardPointerUp() {
   if (!_cardDrag) return;
-  const { card, clone, currentOrder, slotRects, colId, srcIdx, moved } = _cardDrag;
+  const { card, clone, colData, srcColData, srcColId, srcIdx, targetColId, nearestIdx, moved, currentOrder } = _cardDrag;
 
   document.removeEventListener('pointermove',   _onCardPointerMove);
   document.removeEventListener('pointerup',     _onCardPointerUp);
   document.removeEventListener('pointercancel', _onCardPointerUp);
-
   _cardDrag = null;
 
   if (!moved) {
     clone.remove();
     card.classList.remove('kcard--ghost');
+    // Double-tap → edit
+    const now = Date.now();
+    if (_dblTap.cardId === card.dataset.id && now - _dblTap.time < 350) {
+      _dblTap = { cardId: null, time: 0 };
+      _openModal(card.dataset.id);
+    } else {
+      _dblTap = { cardId: card.dataset.id, time: now };
+    }
     return;
   }
 
-  const finalIdx = currentOrder.indexOf(card.dataset.id);
-  const fr       = slotRects[finalIdx];
+  // Animate clone to its final slot
+  const targetCD    = colData.find(cd => cd.colId === targetColId);
+  const sr          = srcColData.slotRects[srcIdx];
+  let   fr          = null;
 
-  clone.style.transition = 'left 0.2s ease, top 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease';
-  clone.style.left       = `${fr.left}px`;
-  clone.style.top        = `${fr.top}px`;
-  clone.style.transform  = 'scale(1)';
-  clone.style.boxShadow  = '0 2px 8px rgba(0,0,0,0.14)';
+  if (targetColId === srcColId && currentOrder) {
+    const finalIdx = currentOrder.indexOf(card.dataset.id);
+    fr = srcColData.slotRects[finalIdx] ?? sr;
+  } else if (targetCD) {
+    if (nearestIdx < targetCD.cardEls.length) {
+      fr = targetCD.slotRects[nearestIdx];
+    } else if (targetCD.slotRects.length > 0) {
+      const lr = targetCD.slotRects[targetCD.slotRects.length - 1];
+      fr = { left: lr.left, top: lr.top + lr.height + 8, width: lr.width, height: lr.height };
+    } else {
+      const cr = targetCD.cardsEl.getBoundingClientRect();
+      fr = { left: cr.left + 10, top: cr.top + 10, width: sr.width, height: sr.height };
+    }
+  }
 
-  const all      = loadKanban();
-  const colTasks = currentOrder.map(id => all.find(t => t.id === id)).filter(Boolean);
-  let   ci       = 0;
-  const reordered = all.map(t => t.col === colId ? colTasks[ci++] : t);
+  if (fr) {
+    clone.style.transition = 'left 0.2s ease, top 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease';
+    clone.style.left       = `${fr.left}px`;
+    clone.style.top        = `${fr.top}px`;
+    clone.style.transform  = 'scale(1)';
+    clone.style.boxShadow  = '0 2px 8px rgba(0,0,0,0.14)';
+  }
 
-  setTimeout(() => {
-    clone.remove();
-    _saveKanban(reordered);
-    renderKanban();
-  }, 200);
+  const all    = loadKanban();
+  const taskId = card.dataset.id;
+
+  if (targetColId === srcColId && currentOrder) {
+    // Within-column reorder
+    const colTasks   = currentOrder.map(id => all.find(t => t.id === id)).filter(Boolean);
+    const otherTasks = all.filter(t => t.col !== srcColId);
+    setTimeout(() => { clone.remove(); _saveKanban([...otherTasks, ...colTasks]); renderKanban(); }, 200);
+  } else {
+    // Cross-column move
+    const task = all.find(t => t.id === taskId);
+    if (!task) { setTimeout(() => { clone.remove(); renderKanban(); }, 200); return; }
+    task.col = targetColId;
+    const targetColTasks = all.filter(t => t.col === targetColId && t.id !== taskId);
+    targetColTasks.splice(Math.min(nearestIdx, targetColTasks.length), 0, task);
+    const otherTasks = all.filter(t => t.col !== targetColId);
+    setTimeout(() => { clone.remove(); _saveKanban([...otherTasks, ...targetColTasks]); renderKanban(); }, 200);
+  }
+}
+
+// ── Column colour picker ─────────────────────────────────
+const COL_COLORS = [
+  '#0288D1','#2E7D32','#E65100','#7B1FA2',
+  '#C2185B','#F57F17','#00838F','#4527A0',
+  '#558B2F','#6D4C41','#37474F','#D32F2F',
+];
+
+function _openColColorPicker(dotEl, colId) {
+  document.querySelector('.col-color-pop')?.remove();
+  const pop = document.createElement('div');
+  pop.className = 'col-color-pop';
+
+  COL_COLORS.forEach(c => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'col-color-swatch';
+    btn.style.background = c;
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const cols = loadCols();
+      const col  = cols.find(x => x.id === colId);
+      if (col) { col.color = c; _saveCols(cols); }
+      pop.remove();
+      renderKanban();
+    });
+    pop.appendChild(btn);
+  });
+
+  const r = dotEl.getBoundingClientRect();
+  pop.style.top  = `${r.bottom + 6}px`;
+  pop.style.left = `${r.left}px`;
+  document.body.appendChild(pop);
+
+  const close = ev => { if (!pop.contains(ev.target)) { pop.remove(); document.removeEventListener('pointerdown', close); } };
+  setTimeout(() => document.addEventListener('pointerdown', close), 0);
 }
 
 // ── Column drag (pointer-based) ──────────────────────────
 function _onColPointerDown(e) {
   if (e.button !== 0) return;
-  if (_colDrag) return;
+  if (_colDrag || _cardDrag) return;
   e.preventDefault();
 
   const col    = e.currentTarget.closest('.kanban-col');
@@ -412,33 +482,19 @@ function _onColPointerDown(e) {
 
   const clone = col.cloneNode(true);
   Object.assign(clone.style, {
-    position:      'fixed',
-    left:          `${sr.left}px`,
-    top:           `${sr.top}px`,
-    width:         `${sr.width}px`,
-    height:        `${sr.height}px`,
-    margin:        '0',
-    zIndex:        '2000',
-    pointerEvents: 'none',
-    transition:    'transform 0.15s ease, box-shadow 0.15s ease',
-    transform:     'scale(1.02)',
-    boxShadow:     '0 24px 64px rgba(0,0,0,0.5)',
-    opacity:       '0.96',
-    borderRadius:  '20px',
+    position: 'fixed', left: `${sr.left}px`, top: `${sr.top}px`,
+    width: `${sr.width}px`, height: `${sr.height}px`,
+    margin: '0', zIndex: '2000', pointerEvents: 'none',
+    transform: 'scale(1.02)', boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
+    opacity: '0.96', borderRadius: '20px',
   });
   document.body.appendChild(clone);
   col.classList.add('kanban-col--ghost');
 
   _colDrag = {
-    col,
-    clone,
-    srcIdx,
-    slotRects,
-    nearestIdx:   srcIdx,
-    currentOrder: loadCols().map(c => c.id),
-    ox: e.clientX - sr.left,
-    oy: e.clientY - sr.top,
-    moved: false,
+    col, clone, srcIdx, slotRects,
+    nearestIdx: srcIdx, currentOrder: loadCols().map(c => c.id),
+    ox: e.clientX - sr.left, oy: e.clientY - sr.top, moved: false,
   };
 
   document.addEventListener('pointermove',   _onColPointerMove);
@@ -454,9 +510,7 @@ function _onColPointerMove(e) {
   const y = e.clientY - oy;
 
   if (!_colDrag.moved) {
-    const dx = e.clientX - (slotRects[srcIdx].left + ox);
-    const dy = e.clientY - (slotRects[srcIdx].top  + oy);
-    if (Math.hypot(dx, dy) < 8) return;
+    if (Math.hypot(e.clientX - (slotRects[srcIdx].left + ox), e.clientY - (slotRects[srcIdx].top + oy)) < 8) return;
     _colDrag.moved = true;
   }
 
@@ -464,9 +518,7 @@ function _onColPointerMove(e) {
   clone.style.top  = `${y}px`;
 
   const cx = x + slotRects[srcIdx].width / 2;
-
-  let nearestIdx = srcIdx;
-  let minDist    = Infinity;
+  let nearestIdx = srcIdx, minDist = Infinity;
   slotRects.forEach((r, i) => {
     const d = Math.abs(cx - (r.left + r.width / 2));
     if (d < minDist) { minDist = d; nearestIdx = i; }
@@ -475,18 +527,18 @@ function _onColPointerMove(e) {
   if (nearestIdx === _colDrag.nearestIdx) return;
   _colDrag.nearestIdx = nearestIdx;
 
-  const ids      = loadCols().map(c => c.id);
+  const ids = loadCols().map(c => c.id);
   const newOrder = [...ids];
-  const [moved]  = newOrder.splice(srcIdx, 1);
+  const [moved] = newOrder.splice(srcIdx, 1);
   newOrder.splice(nearestIdx, 0, moved);
   _colDrag.currentOrder = newOrder;
 
   const $board = document.getElementById('kanbanBoard');
   [...$board.querySelectorAll('.kanban-col')].forEach((c, domIdx) => {
     if (c === col) return;
-    const targetIdx = newOrder.indexOf(c.dataset.col);
-    const tr = slotRects[targetIdx];
-    const cr = slotRects[domIdx];
+    const tIdx = newOrder.indexOf(c.dataset.col);
+    const tr   = slotRects[tIdx];
+    const cr   = slotRects[domIdx];
     c.style.transition = 'transform 0.24s cubic-bezier(0.25,0.46,0.45,0.94)';
     c.style.transform  = `translateX(${tr.left - cr.left}px)`;
   });
@@ -494,13 +546,11 @@ function _onColPointerMove(e) {
 
 function _onColPointerUp() {
   if (!_colDrag) return;
-
   const { col, clone, currentOrder, slotRects, moved } = _colDrag;
 
   document.removeEventListener('pointermove',   _onColPointerMove);
   document.removeEventListener('pointerup',     _onColPointerUp);
   document.removeEventListener('pointercancel', _onColPointerUp);
-
   _colDrag = null;
 
   if (!moved) {
@@ -509,11 +559,8 @@ function _onColPointerUp() {
     return;
   }
 
-  // Land clone on its final slot
-  const colId      = col.dataset.col;
-  const finalIdx   = currentOrder.indexOf(colId);
-  const fr         = slotRects[finalIdx];
-
+  const finalIdx = currentOrder.indexOf(col.dataset.col);
+  const fr       = slotRects[finalIdx];
   clone.style.transition = 'left 0.22s ease, top 0.22s ease, transform 0.22s ease, box-shadow 0.22s ease';
   clone.style.left       = `${fr.left}px`;
   clone.style.top        = `${fr.top}px`;
@@ -521,26 +568,19 @@ function _onColPointerUp() {
   clone.style.boxShadow  = '0 4px 20px rgba(0,0,0,0.18)';
 
   const savedCols = loadCols();
-  const newCols   = currentOrder.map(id => savedCols.find(c => c.id === id)).filter(Boolean);
-  _saveCols(newCols);
-
-  setTimeout(() => {
-    try { clone.remove(); } catch {}
-    renderKanban();
-  }, 220);
+  _saveCols(currentOrder.map(id => savedCols.find(c => c.id === id)).filter(Boolean));
+  setTimeout(() => { try { clone.remove(); } catch {} renderKanban(); }, 220);
 }
 
 // ── Add new column (FAB in task view) ────────────────────
 function addKanbanColumn() {
   const cols   = loadCols();
   const colors = ['#0288D1','#E65100','#2E7D32','#7B1FA2','#C2185B','#F57F17'];
-  const color  = colors[cols.length % colors.length];
-  cols.push({ id: uid(), label: 'Nuova sezione', color });
+  cols.push({ id: uid(), label: 'Nuova sezione', color: colors[cols.length % colors.length] });
   _saveCols(cols);
   renderKanban();
 
-  const $board = document.getElementById('kanbanBoard');
-  const last   = $board?.lastElementChild;
+  const last = document.getElementById('kanbanBoard')?.lastElementChild;
   if (last) {
     const titleEl = last.querySelector('.kanban-col-title');
     if (titleEl) {
@@ -570,16 +610,35 @@ function _openModal(taskId, col) {
   document.getElementById('tmTagInput').value = '';
   document.getElementById('tmDelete').classList.toggle('hidden', !taskId);
 
+  _editingChecklist  = task ? (task.checklist || []).map(i => ({ ...i })) : [];
+  _editingAssignees  = task ? [...(task.assignees || [])] : [];
+
   _renderTmTags();
   _renderTmColors();
   _renderTmTagColors();
   _renderTagRepo();
+  _renderTmChecklist();
+  _renderTmAssignees();
+  _renderAssigneeRepo();
   document.getElementById('taskModal').classList.remove('hidden');
   document.getElementById('tmTitle').focus();
 }
 
 function _closeModal() {
-  document.getElementById('taskModal').classList.add('hidden');
+  const $modal = document.getElementById('taskModal');
+  if ($modal.classList.contains('hidden')) return;
+  _addPendingTag();
+  _addPendingAssignee();
+  const title = document.getElementById('tmTitle').value.trim();
+  const body  = document.getElementById('tmBody').value.trim();
+  const all   = loadKanban();
+  if (_editingId) {
+    const t = all.find(x => x.id === _editingId);
+    if (t) Object.assign(t, { title, body, tags: [..._editingTags], color: _editingColor, checklist: _editingChecklist.map(i => ({ ...i })), assignees: [..._editingAssignees] });
+    _saveKanban(all);
+    renderKanban();
+  }
+  $modal.classList.add('hidden');
 }
 
 function _renderTmTags() {
@@ -605,7 +664,7 @@ function _renderTmColors() {
   wrap.innerHTML = '';
   TASK_COLORS.forEach(c => {
     const btn = document.createElement('button');
-    btn.type      = 'button';
+    btn.type = 'button';
     btn.className = 'tm-color-dot' + (c === _editingColor ? ' tm-color-dot--sel' : '');
     btn.style.background = c;
     btn.addEventListener('click', () => { _editingColor = c; _renderTmColors(); });
@@ -619,7 +678,7 @@ function _renderTmTagColors() {
   wrap.innerHTML = '';
   TASK_COLORS.forEach(c => {
     const btn = document.createElement('button');
-    btn.type      = 'button';
+    btn.type = 'button';
     btn.className = 'tm-tc-dot' + (c === _newTagColor ? ' tm-tc-dot--sel' : '');
     btn.style.background = c;
     btn.addEventListener('click', () => { _newTagColor = c; _renderTmTagColors(); });
@@ -633,27 +692,22 @@ function _renderTagRepo() {
   wrap.innerHTML = '';
   loadTags().filter(t => !_editingTags.includes(t.name)).forEach(tagObj => {
     const chip = document.createElement('span');
-    chip.className = 'tm-repo-chip' + (_editingTags.includes(tagObj.name) ? ' tm-repo-chip--active' : '');
+    chip.className = 'tm-repo-chip';
     chip.style.setProperty('--chip-color', tagObj.color);
 
     const label = document.createElement('span');
     label.className   = 'tm-repo-chip-label';
     label.textContent = tagObj.name;
     label.addEventListener('click', () => {
-      if (_editingTags.includes(tagObj.name)) {
-        _editingTags = _editingTags.filter(t => t !== tagObj.name);
-      } else {
-        _editingTags.push(tagObj.name);
-      }
+      _editingTags.push(tagObj.name);
       _renderTmTags();
       _renderTagRepo();
     });
 
     const del = document.createElement('button');
-    del.type      = 'button';
-    del.className = 'tm-repo-chip-del';
+    del.type = 'button';
+    del.className   = 'tm-repo-chip-del';
     del.textContent = '×';
-    del.title = 'Elimina tag';
     del.addEventListener('click', e => {
       e.stopPropagation();
       _saveTags(loadTags().filter(t => t.name !== tagObj.name));
@@ -668,20 +722,114 @@ function _renderTagRepo() {
   });
 }
 
+function _renderTmChecklist() {
+  const list = document.getElementById('tmChecklistItems');
+  if (!list) return;
+  list.innerHTML = '';
+  _editingChecklist.forEach((item, i) => {
+    const row = document.createElement('div');
+    row.className = 'tm-cl-row' + (item.done ? ' done' : '');
+    const chk = document.createElement('button');
+    chk.type = 'button';
+    chk.className = 'tm-cl-check';
+    const txt = document.createElement('span');
+    txt.className   = 'tm-cl-text';
+    txt.textContent = item.text;
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className   = 'tm-cl-del';
+    del.textContent = '×';
+    chk.addEventListener('click', () => { item.done = !item.done; _renderTmChecklist(); });
+    del.addEventListener('click', () => { _editingChecklist.splice(i, 1); _renderTmChecklist(); });
+    row.appendChild(chk);
+    row.appendChild(txt);
+    row.appendChild(del);
+    list.appendChild(row);
+  });
+}
+
+function _addChecklistItem() {
+  const input = document.getElementById('tmCheckInput');
+  const val   = input.value.trim();
+  if (!val) return;
+  _editingChecklist.push({ id: uid(), text: val, done: false });
+  _renderTmChecklist();
+  input.value = '';
+  input.focus();
+}
+
+function _renderTmAssignees() {
+  const list = document.getElementById('tmAssigneeList');
+  if (!list) return;
+  list.innerHTML = '';
+  _editingAssignees.forEach((name, i) => {
+    const chip = document.createElement('span');
+    chip.className = 'tm-assignee-chip';
+    chip.innerHTML = `${escHtml(name)}<button class="tm-assignee-chip-del" type="button">×</button>`;
+    chip.querySelector('.tm-assignee-chip-del').addEventListener('pointerdown', e => {
+      e.preventDefault();
+      _editingAssignees.splice(i, 1);
+      _renderTmAssignees();
+      _renderAssigneeRepo();
+    });
+    list.appendChild(chip);
+  });
+}
+
+function _renderAssigneeRepo() {
+  const wrap = document.getElementById('tmAssigneeRepo');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  loadAssignees().filter(n => !_editingAssignees.includes(n)).forEach(name => {
+    const chip = document.createElement('span');
+    chip.className = 'tm-asgn-repo-chip';
+
+    const label = document.createElement('span');
+    label.className   = 'tm-asgn-repo-label';
+    label.textContent = name;
+    label.addEventListener('click', () => {
+      _editingAssignees.push(name);
+      _renderTmAssignees();
+      _renderAssigneeRepo();
+    });
+
+    const del = document.createElement('button');
+    del.type      = 'button';
+    del.className = 'tm-asgn-repo-del';
+    del.textContent = '×';
+    del.addEventListener('click', e => {
+      e.stopPropagation();
+      _saveAssignees(loadAssignees().filter(n => n !== name));
+      _editingAssignees = _editingAssignees.filter(n => n !== name);
+      _renderTmAssignees();
+      _renderAssigneeRepo();
+    });
+
+    chip.appendChild(label);
+    chip.appendChild(del);
+    wrap.appendChild(chip);
+  });
+}
+
+function _addPendingAssignee() {
+  const input = document.getElementById('tmAssigneeInput');
+  const val   = input.value.trim();
+  if (!val) return;
+  const repo = loadAssignees();
+  if (!repo.includes(val)) { repo.push(val); _saveAssignees(repo); }
+  if (!_editingAssignees.includes(val)) { _editingAssignees.push(val); _renderTmAssignees(); }
+  _renderAssigneeRepo();
+  input.value = '';
+  input.focus();
+}
+
 function _addPendingTag() {
   const input = document.getElementById('tmTagInput');
   const val   = input.value.trim().replace(/,/g, '');
   if (!val) return;
-
   const repo = loadTags();
-  if (!repo.find(t => t.name === val)) {
-    repo.push({ name: val, color: _newTagColor });
-    _saveTags(repo);
-  }
-  if (!_editingTags.includes(val)) {
-    _editingTags.push(val);
-    _renderTmTags();
-  }
+  if (!repo.find(t => t.name === val)) { repo.push({ name: val, color: _newTagColor }); _saveTags(repo); }
+  if (!_editingTags.includes(val)) { _editingTags.push(val); _renderTmTags(); }
   _renderTagRepo();
   input.value = '';
 }
@@ -716,37 +864,28 @@ function _kanbanSubtitle() {
     if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); _addPendingTag(); }
   });
 
-  document.getElementById('tmSave').addEventListener('click', () => {
-    _addPendingTag();
-    const title = document.getElementById('tmTitle').value.trim();
-    const body  = document.getElementById('tmBody').value.trim();
-    const all   = loadKanban();
-    if (_editingId) {
-      const t = all.find(x => x.id === _editingId);
-      if (t) Object.assign(t, { title, body, tags: [..._editingTags], color: _editingColor });
-    } else {
-      all.push({ id: uid(), col: _editingCol, title, body, tags: [..._editingTags], color: _editingColor });
-    }
-    _saveKanban(all);
-    renderKanban();
-    _closeModal();
+  document.getElementById('tmCheckInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); _addChecklistItem(); }
+  });
+  document.getElementById('tmCheckAddBtn').addEventListener('click', () => _addChecklistItem());
+
+  document.getElementById('tmAssigneeInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); _addPendingAssignee(); }
   });
 
   document.getElementById('tmDelete').addEventListener('click', () => {
     if (!_editingId) return;
     showConfirm({
-      title: 'Eliminare task?',
-      message: 'Questa azione non può essere annullata.',
-      confirmLabel: 'Elimina',
-      danger: true,
+      title: 'Eliminare task?', message: 'Questa azione non può essere annullata.',
+      confirmLabel: 'Elimina', danger: true,
       onConfirm: () => {
+        $modal.classList.add('hidden');
         _saveKanban(loadKanban().filter(t => t.id !== _editingId));
         renderKanban();
-        _closeModal();
       },
     });
   });
 
-  document.getElementById('tmCancel').addEventListener('click', _closeModal);
   $modal.addEventListener('pointerdown', e => { if (e.target === $modal) _closeModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') _closeModal(); });
 })();

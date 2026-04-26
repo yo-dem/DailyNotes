@@ -110,11 +110,24 @@
         <div class="tm-tag-repo" id="tmTagRepo"></div>
       </div>
       <textarea id="tmBody" class="tm-body" placeholder="Descrizione…"></textarea>
+      <div class="tm-checklist-wrap" id="tmChecklistWrap">
+        <div class="tm-checklist-items" id="tmChecklistItems"></div>
+        <div class="tm-checklist-add">
+          <input class="tm-check-input" id="tmCheckInput" type="text" placeholder="Aggiungi voce checklist… (Invio)" autocomplete="off" />
+          <button class="tm-check-add-btn" id="tmCheckAddBtn" type="button">+</button>
+        </div>
+      </div>
+      <div class="tm-assignees-wrap" id="tmAssigneesWrap">
+        <div class="tm-assignee-list" id="tmAssigneeList"></div>
+        <div class="tm-assignee-input-row">
+          <svg class="tm-assignee-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <input class="tm-assignee-input" id="tmAssigneeInput" type="text" placeholder="Aggiungi operatore… (Invio)" autocomplete="off" />
+        </div>
+        <div class="tm-assignee-repo" id="tmAssigneeRepo"></div>
+      </div>
       <div class="tm-colors" id="tmColors"></div>
       <div class="modal-actions">
-        <button id="tmSave">Salva</button>
-        <button id="tmDelete" class="btn-danger hidden">Elimina</button>
-        <button id="tmCancel" class="btn-secondary">Annulla</button>
+        <button id="tmDelete" class="btn-danger hidden">Elimina task</button>
       </div>
     </div>
   </div>
