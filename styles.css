@@ -2089,7 +2089,7 @@ body.todo-active .todo-list {
   .cal-today-btn { padding: 5px 0; }
 }
 
-/* ── Dot background shared by todo + pages (matches post-it canvas) ── */
+/* ── Dot background shared by to-do + pages (matches post-it canvas) ── */
 /* Applied to body so it covers the full viewport, not just the .main column */
 body.todo-active,
 body.pages-active {
