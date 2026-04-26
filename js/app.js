@@ -32,11 +32,11 @@ function navigateTo(view) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('view--active'));
   document.getElementById(`${view}View`).classList.add('view--active');
 
-  const onDash = view === 'dashboard';
+  const onDash  = view === 'dashboard';
   const showFab = view === 'todo' || view === 'notes' || view === 'pages' || view === 'task';
   document.getElementById('prevDay').classList.toggle('hidden', !onDash);
   document.getElementById('nextDay').classList.toggle('hidden', !onDash);
-  document.getElementById('bottomDock').classList.toggle('hidden', onDash);
+  document.getElementById('backFab').classList.toggle('hidden', onDash);
   document.getElementById('addTodo').classList.toggle('hidden', !showFab);
   document.body.classList.toggle('notes-active', view === 'notes');
   document.body.classList.toggle('todo-active',  view === 'todo');
@@ -79,8 +79,8 @@ $todayChip.addEventListener('click', e => {
   renderAll();
 });
 
-// ── Back button ────────────────────────────────────────
-document.getElementById('backBtn').addEventListener('click', () => navigateTo('dashboard'));
+// ── Back FAB ───────────────────────────────────────────
+document.getElementById('backFab').addEventListener('click', () => navigateTo('dashboard'));
 
 // ── FAB ────────────────────────────────────────────────
 document.getElementById('addTodo').addEventListener('click', () => {

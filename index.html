@@ -90,16 +90,15 @@
 
   </main>
 
+  <button class="fab fab-back hidden" id="backFab" aria-label="Torna alla dashboard">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+  </button>
   <button class="fab hidden" id="addTodo" aria-label="Aggiungi TODO">+</button>
-
-  <!-- Bottom dock -->
-  <div class="bottom-dock hidden" id="bottomDock">
-    <button class="back-btn" id="backBtn">Dashboard</button>
-  </div>
 
   <!-- Modal: Task Editor -->
   <div class="modal-overlay hidden" id="taskModal">
     <div class="modal modal-task">
+      <div class="tm-colors" id="tmColors"></div>
       <input class="tm-title" id="tmTitle" type="text" placeholder="Titolo task…" autocomplete="off" spellcheck="false" />
       <div class="tm-tags-wrap">
         <div class="tm-tag-list" id="tmTagList"></div>
@@ -124,10 +123,6 @@
           <input class="tm-assignee-input" id="tmAssigneeInput" type="text" placeholder="Aggiungi operatore… (Invio)" autocomplete="off" />
         </div>
         <div class="tm-assignee-repo" id="tmAssigneeRepo"></div>
-      </div>
-      <div class="tm-colors" id="tmColors"></div>
-      <div class="modal-actions">
-        <button id="tmDelete" class="btn-danger hidden">Elimina task</button>
       </div>
     </div>
   </div>

@@ -45,10 +45,11 @@ function loadAssignees() {
   try {
     const raw = localStorage.getItem(KANBAN_ASSIGNEES_KEY);
     const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr : [];
+    if (!Array.isArray(arr)) return [];
+    return arr.map(a => typeof a === 'string' ? { name: a, color: TASK_COLORS[3] } : a);
   } catch { return []; }
 }
-function _saveAssignees(names) { localStorage.setItem(KANBAN_ASSIGNEES_KEY, JSON.stringify(names)); }
+function _saveAssignees(items) { localStorage.setItem(KANBAN_ASSIGNEES_KEY, JSON.stringify(items)); }
 
 // ── Tag colour ───────────────────────────────────────────
 function _tagColor(tagName) {
@@ -596,6 +597,27 @@ function addKanbanColumn() {
   }
 }
 
+// ── Mini colour picker ───────────────────────────────────
+function _openMiniColorPicker(anchorEl, currentColor, onPick) {
+  document.querySelector('.mini-color-pop')?.remove();
+  const pop = document.createElement('div');
+  pop.className = 'mini-color-pop';
+  TASK_COLORS.forEach(c => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'mini-color-swatch' + (c === currentColor ? ' sel' : '');
+    btn.style.background = c;
+    btn.addEventListener('click', e => { e.stopPropagation(); onPick(c); pop.remove(); });
+    pop.appendChild(btn);
+  });
+  const r = anchorEl.getBoundingClientRect();
+  pop.style.top  = `${r.bottom + 4}px`;
+  pop.style.left = `${r.left}px`;
+  document.body.appendChild(pop);
+  const close = ev => { if (!pop.contains(ev.target)) { pop.remove(); document.removeEventListener('pointerdown', close); } };
+  setTimeout(() => document.addEventListener('pointerdown', close), 0);
+}
+
 // ── Modal ────────────────────────────────────────────────
 function _openModal(taskId, col) {
   const task    = taskId ? loadKanban().find(t => t.id === taskId) : null;
@@ -608,7 +630,6 @@ function _openModal(taskId, col) {
   document.getElementById('tmTitle').value    = task?.title || '';
   document.getElementById('tmBody').value     = task?.body  || '';
   document.getElementById('tmTagInput').value = '';
-  document.getElementById('tmDelete').classList.toggle('hidden', !taskId);
 
   _editingChecklist  = task ? (task.checklist || []).map(i => ({ ...i })) : [];
   _editingAssignees  = task ? [...(task.assignees || [])] : [];
@@ -649,6 +670,18 @@ function _renderTmTags() {
     chip.className = 'tm-chip';
     chip.style.background = _tagColor(tag);
     chip.innerHTML = `${escHtml(tag)}<button class="tm-chip-del" type="button">×</button>`;
+    chip.addEventListener('click', e => {
+      if (e.target.closest('.tm-chip-del')) return;
+      _openMiniColorPicker(chip, _tagColor(tag), newColor => {
+        const repo = loadTags();
+        const found = repo.find(t => t.name === tag);
+        if (found) found.color = newColor;
+        else repo.push({ name: tag, color: newColor });
+        _saveTags(repo);
+        _renderTmTags();
+        _renderTagRepo();
+      });
+    });
     chip.querySelector('.tm-chip-del').addEventListener('pointerdown', e => {
       e.preventDefault();
       _editingTags.splice(i, 1);
@@ -695,6 +728,20 @@ function _renderTagRepo() {
     chip.className = 'tm-repo-chip';
     chip.style.setProperty('--chip-color', tagObj.color);
 
+    const swatch = document.createElement('span');
+    swatch.className        = 'tm-repo-chip-swatch';
+    swatch.style.background = tagObj.color;
+    swatch.addEventListener('click', e => {
+      e.stopPropagation();
+      _openMiniColorPicker(swatch, tagObj.color, newColor => {
+        const repo = loadTags();
+        const found = repo.find(t => t.name === tagObj.name);
+        if (found) { found.color = newColor; _saveTags(repo); }
+        _renderTagRepo();
+        _renderTmTags();
+      });
+    });
+
     const label = document.createElement('span');
     label.className   = 'tm-repo-chip-label';
     label.textContent = tagObj.name;
@@ -716,6 +763,7 @@ function _renderTagRepo() {
       _renderTagRepo();
     });
 
+    chip.appendChild(swatch);
     chip.appendChild(label);
     chip.appendChild(del);
     wrap.appendChild(chip);
@@ -762,10 +810,24 @@ function _renderTmAssignees() {
   const list = document.getElementById('tmAssigneeList');
   if (!list) return;
   list.innerHTML = '';
+  const repo = loadAssignees();
   _editingAssignees.forEach((name, i) => {
+    const asgn  = repo.find(a => a.name === name);
+    const color = asgn?.color || TASK_COLORS[3];
     const chip = document.createElement('span');
-    chip.className = 'tm-assignee-chip';
+    chip.className        = 'tm-assignee-chip';
+    chip.style.background = color;
     chip.innerHTML = `${escHtml(name)}<button class="tm-assignee-chip-del" type="button">×</button>`;
+    chip.addEventListener('click', e => {
+      if (e.target.closest('.tm-assignee-chip-del')) return;
+      _openMiniColorPicker(chip, color, newColor => {
+        const r = loadAssignees();
+        const found = r.find(a => a.name === name);
+        if (found) { found.color = newColor; _saveAssignees(r); }
+        _renderTmAssignees();
+        _renderAssigneeRepo();
+      });
+    });
     chip.querySelector('.tm-assignee-chip-del').addEventListener('pointerdown', e => {
       e.preventDefault();
       _editingAssignees.splice(i, 1);
@@ -780,31 +842,47 @@ function _renderAssigneeRepo() {
   const wrap = document.getElementById('tmAssigneeRepo');
   if (!wrap) return;
   wrap.innerHTML = '';
-  loadAssignees().filter(n => !_editingAssignees.includes(n)).forEach(name => {
+  loadAssignees().filter(a => !_editingAssignees.includes(a.name)).forEach(asgn => {
     const chip = document.createElement('span');
     chip.className = 'tm-asgn-repo-chip';
+    chip.style.setProperty('--asgn-color', asgn.color);
+
+    const swatch = document.createElement('span');
+    swatch.className        = 'tm-asgn-repo-swatch';
+    swatch.style.background = asgn.color;
+    swatch.addEventListener('click', e => {
+      e.stopPropagation();
+      _openMiniColorPicker(swatch, asgn.color, newColor => {
+        const r = loadAssignees();
+        const found = r.find(a => a.name === asgn.name);
+        if (found) { found.color = newColor; _saveAssignees(r); }
+        _renderAssigneeRepo();
+        _renderTmAssignees();
+      });
+    });
 
     const label = document.createElement('span');
     label.className   = 'tm-asgn-repo-label';
-    label.textContent = name;
+    label.textContent = asgn.name;
     label.addEventListener('click', () => {
-      _editingAssignees.push(name);
+      _editingAssignees.push(asgn.name);
       _renderTmAssignees();
       _renderAssigneeRepo();
     });
 
     const del = document.createElement('button');
-    del.type      = 'button';
-    del.className = 'tm-asgn-repo-del';
+    del.type        = 'button';
+    del.className   = 'tm-asgn-repo-del';
     del.textContent = '×';
     del.addEventListener('click', e => {
       e.stopPropagation();
-      _saveAssignees(loadAssignees().filter(n => n !== name));
-      _editingAssignees = _editingAssignees.filter(n => n !== name);
+      _saveAssignees(loadAssignees().filter(a => a.name !== asgn.name));
+      _editingAssignees = _editingAssignees.filter(n => n !== asgn.name);
       _renderTmAssignees();
       _renderAssigneeRepo();
     });
 
+    chip.appendChild(swatch);
     chip.appendChild(label);
     chip.appendChild(del);
     wrap.appendChild(chip);
@@ -816,7 +894,7 @@ function _addPendingAssignee() {
   const val   = input.value.trim();
   if (!val) return;
   const repo = loadAssignees();
-  if (!repo.includes(val)) { repo.push(val); _saveAssignees(repo); }
+  if (!repo.find(a => a.name === val)) { repo.push({ name: val, color: TASK_COLORS[3] }); _saveAssignees(repo); }
   if (!_editingAssignees.includes(val)) { _editingAssignees.push(val); _renderTmAssignees(); }
   _renderAssigneeRepo();
   input.value = '';
@@ -871,19 +949,6 @@ function _kanbanSubtitle() {
 
   document.getElementById('tmAssigneeInput').addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); _addPendingAssignee(); }
-  });
-
-  document.getElementById('tmDelete').addEventListener('click', () => {
-    if (!_editingId) return;
-    showConfirm({
-      title: 'Eliminare task?', message: 'Questa azione non può essere annullata.',
-      confirmLabel: 'Elimina', danger: true,
-      onConfirm: () => {
-        $modal.classList.add('hidden');
-        _saveKanban(loadKanban().filter(t => t.id !== _editingId));
-        renderKanban();
-      },
-    });
   });
 
   $modal.addEventListener('pointerdown', e => { if (e.target === $modal) _closeModal(); });

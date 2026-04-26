@@ -200,38 +200,6 @@ body {
 .view--active { display: flex; }
 
 /* ── Bottom dock ── */
-.bottom-dock {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 50;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 12px 24px max(16px, env(safe-area-inset-bottom));
-  background: rgba(255,255,255,0.08);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(255,255,255,0.12);
-}
-.bottom-dock.hidden { display: none; }
-
-/* ── Back button ── */
-.back-btn {
-  background: rgba(255,255,255,0.18);
-  border: 1px solid rgba(255,255,255,0.32);
-  border-radius: 14px;
-  color: var(--white);
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 1rem;
-  font-weight: 600;
-  padding: 15px 40px;
-  transition: background 0.12s;
-  width: 300px;
-}
-.back-btn:hover { background: rgba(255,255,255,0.28); }
 
 /* ── Dashboard ── */
 #dashboardView {
@@ -451,74 +419,7 @@ body.notes-active .watermark-month {
   display: none;
 }
 
-/* ── Compact dock (notes / to-do / pages / task) ── */
-body.notes-active,
-body.todo-active,
-body.pages-active,
-body.task-active {
-  --dock-h: 58px; /* compact dock height — FAB is anchored to this */
-}
-
-body.notes-active .bottom-dock,
-body.todo-active .bottom-dock,
-body.pages-active .bottom-dock,
-body.task-active .bottom-dock {
-  padding: 8px 12px max(8px, env(safe-area-inset-bottom));
-  background: transparent;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  border: none;
-}
-
-body.notes-active .bottom-dock::before,
-body.todo-active .bottom-dock::before,
-body.pages-active .bottom-dock::before,
-body.task-active .bottom-dock::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  backdrop-filter: blur(20px) saturate(140%);
-  -webkit-backdrop-filter: blur(20px) saturate(140%);
-  opacity: 0.38;
-  transition: opacity 0.18s ease;
-}
-
-body.notes-active .bottom-dock::before {
-  background: rgba(20, 80, 160, 0.3);
-}
-body.notes-active .bottom-dock:hover::before,
-body.notes-active .bottom-dock:focus-within::before {
-  opacity: 0.72;
-}
-
-body.todo-active .bottom-dock::before,
-body.pages-active .bottom-dock::before,
-body.task-active .bottom-dock::before {
-  background: rgba(16, 80, 160, 0.65);
-}
-body.todo-active .bottom-dock:hover::before,
-body.todo-active .bottom-dock:focus-within::before,
-body.pages-active .bottom-dock:hover::before,
-body.pages-active .bottom-dock:focus-within::before,
-body.task-active .bottom-dock:hover::before,
-body.task-active .bottom-dock:focus-within::before {
-  opacity: 0.72;
-}
-
-body.notes-active .back-btn,
-body.todo-active .back-btn,
-body.pages-active .back-btn,
-body.task-active .back-btn {
-  padding: 9px 22px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  border-radius: 12px;
-  background: rgba(255,255,255,0.14);
-  border-color: rgba(255,255,255,0.24);
-}
-
-/* FAB slightly smaller in compact views; bottom is inherited from --dock-h on body */
+/* FAB slightly smaller in sub-views */
 body.notes-active .fab,
 body.todo-active .fab,
 body.pages-active .fab,
@@ -530,7 +431,7 @@ body.task-active .fab {
 
 body.todo-active .main,
 body.pages-active .main,
-body.task-active .main { padding-top: 54px; padding-bottom: 80px; }
+body.task-active .main { padding-top: 54px; padding-bottom: 96px; }
 
 body.task-active .main { padding-left: 12px; padding-right: 12px; max-width: 100%; }
 
@@ -1224,7 +1125,7 @@ body.todo-active .todo-list {
 
 .fab {
   position: fixed;
-  bottom: calc(var(--dock-h, 72px) + 20px);
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
   right: var(--right-col);
   width: 60px;
   height: 60px;
@@ -1245,6 +1146,25 @@ body.todo-active .todo-list {
 
 .fab:hover {
   background: #039BE5;
+  transform: scale(1.07);
+}
+
+.fab-back {
+  right: auto;
+  left: var(--right-col);
+  background: rgba(255,255,255,0.18);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.28);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.22);
+}
+.fab-back svg {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+}
+.fab-back:hover {
+  background: rgba(255,255,255,0.3);
   transform: scale(1.07);
 }
 
@@ -2437,6 +2357,57 @@ body.pages-active .page-toolbar { display: flex; }
 }
 .col-color-swatch:hover { transform: scale(1.25); border-color: #fff; }
 
+.mini-color-pop {
+  position: fixed;
+  z-index: 3000;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px;
+  background: rgba(30,30,50,0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  width: 130px;
+}
+.mini-color-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.2);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.1s, border-color 0.1s;
+}
+.mini-color-swatch:hover { transform: scale(1.25); border-color: #fff; }
+.mini-color-swatch.sel  { border-color: #fff; transform: scale(1.15); box-shadow: 0 0 0 2px rgba(255,255,255,0.4); }
+
+.tm-chip { cursor: pointer; }
+
+.tm-repo-chip-swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  cursor: pointer;
+  border: 1.5px solid rgba(255,255,255,0.35);
+  transition: transform 0.1s;
+}
+.tm-repo-chip-swatch:hover { transform: scale(1.3); }
+
+.tm-asgn-repo-swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  cursor: pointer;
+  border: 1.5px solid rgba(0,0,0,0.2);
+  transition: transform 0.1s;
+}
+.tm-asgn-repo-swatch:hover { transform: scale(1.3); }
+
 .kanban-col-grip {
   color: rgba(255,255,255,0.35);
   font-size: 1.05rem;
@@ -2733,23 +2704,6 @@ body.pages-active .page-toolbar { display: flex; }
 .modal-task::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.13); border-radius: 99px; }
 .modal-task::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
 
-.modal-task .modal-actions {
-  margin-top: 0;
-  justify-content: flex-end;
-}
-.modal-task .modal-actions .btn-danger {
-  flex: 0 0 auto;
-  background: rgba(211,47,47,0.15);
-  border: 1px solid rgba(211,47,47,0.35);
-  color: #c62828;
-  box-shadow: none;
-  font-size: 0.82rem;
-  padding: 8px 16px;
-}
-.modal-task .modal-actions .btn-danger:hover {
-  background: rgba(211,47,47,0.28);
-  transform: none;
-}
 
 .tm-title {
   background: rgba(0,0,0,0.06);
@@ -3054,7 +3008,8 @@ body.pages-active .page-toolbar { display: flex; }
   font-size: 0.72rem;
   font-weight: 600;
   background: rgba(0,0,0,0.12);
-  color: #1a1a2e;
+  color: #fff;
+  cursor: pointer;
 }
 
 .tm-assignee-chip-del {
@@ -3108,13 +3063,13 @@ body.pages-active .page-toolbar { display: flex; }
 .tm-asgn-repo-chip {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  padding: 2px 4px 2px 9px;
+  gap: 4px;
+  padding: 2px 4px 2px 7px;
   border-radius: 10px;
   font-size: 0.7rem;
   font-weight: 600;
-  border: 1.5px solid rgba(0,0,0,0.25);
-  color: rgba(0,0,0,0.55);
+  border: 1.5px solid var(--asgn-color, rgba(0,0,0,0.25));
+  color: var(--asgn-color, rgba(0,0,0,0.55));
   background: transparent;
   opacity: 0.7;
   transition: opacity 0.12s;
