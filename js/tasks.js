@@ -132,7 +132,7 @@ function renderKanban() {
     // Add-task button
     footer.querySelector('.kanban-add-btn').addEventListener('click', () => {
       const all = loadKanban();
-      all.push({ id: uid(), col: col.id, title: '', body: '', tags: [], color: TASK_COLORS[1] });
+      all.push({ id: uid(), col: col.id, title: _nextTaskTitle(), body: '', tags: [], color: TASK_COLORS[1] });
       _saveKanban(all);
       renderKanban();
     });
@@ -601,6 +601,14 @@ function addKanbanColumn() {
   }
 }
 
+// ── Auto-title for new tasks ─────────────────────────────
+function _nextTaskTitle() {
+  const titles = new Set(loadKanban().map(t => t.title));
+  let n = 1;
+  while (titles.has(`Titolo ${n}`)) n++;
+  return `Titolo ${n}`;
+}
+
 // ── Mini colour picker ───────────────────────────────────
 function _openMiniColorPicker(anchorEl, currentColor, onPick) {
   document.querySelector('.mini-color-pop')?.remove();
@@ -633,6 +641,7 @@ function _openModal(taskId, col) {
   document.getElementById('tmTitle').value    = task?.title || '';
   document.getElementById('tmBody').value     = task?.body  || '';
   document.getElementById('tmTagInput').value = '';
+  document.getElementById('tmClone').classList.toggle('hidden', !taskId);
 
   _editingChecklist  = task ? (task.checklist || []).map(i => ({ ...i })) : [];
   _editingAssignees  = task ? [...(task.assignees || [])] : [];
@@ -890,7 +899,7 @@ function _addPendingTag() {
 function addKanbanTask() {
   const colId = loadCols()[0]?.id || 'todo';
   const all   = loadKanban();
-  all.push({ id: uid(), col: colId, title: '', body: '', tags: [], color: TASK_COLORS[1] });
+  all.push({ id: uid(), col: colId, title: _nextTaskTitle(), body: '', tags: [], color: TASK_COLORS[1] });
   _saveKanban(all);
   renderKanban();
 }
@@ -923,6 +932,31 @@ function _kanbanSubtitle() {
 
   document.getElementById('tmAssigneeInput').addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); _addPendingAssignee(); }
+  });
+
+  document.getElementById('tmClone').addEventListener('click', () => {
+    if (!_editingId) return;
+    _addPendingTag();
+    _addPendingAssignee();
+    const title  = document.getElementById('tmTitle').value.trim();
+    const body   = document.getElementById('tmBody').value.trim();
+    const all    = loadKanban();
+    const src    = all.find(t => t.id === _editingId);
+    if (src) Object.assign(src, { title, body, tags: [..._editingTags], color: _editingColor, checklist: _editingChecklist.map(i => ({ ...i })), assignees: [..._editingAssignees] });
+    const clone  = {
+      id:         uid(),
+      col:        src?.col || _editingCol,
+      title:      `Copia di ${title}`,
+      body:       body,
+      tags:       [..._editingTags],
+      color:      _editingColor,
+      checklist:  _editingChecklist.map(i => ({ ...i, id: uid() })),
+      assignees:  [..._editingAssignees],
+    };
+    all.push(clone);
+    _saveKanban(all);
+    $modal.classList.add('hidden');
+    renderKanban();
   });
 
   $modal.addEventListener('pointerdown', e => { if (e.target === $modal) _closeModal(); });

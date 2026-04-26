@@ -1177,8 +1177,10 @@ body.todo-active .todo-list {
   -webkit-backdrop-filter: blur(6px);
   z-index: 200;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  overflow-y: auto;
+  padding: 40px 0;
 }
 
 .modal-overlay.hidden { display: none; }
@@ -2700,19 +2702,34 @@ body.pages-active .page-toolbar { display: flex; }
 
 /* ── Task modal ── */
 .modal-task {
+  position: relative;
   width: min(480px, 95vw);
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: 88vh;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0,0,0,0.13) transparent;
 }
-.modal-task::-webkit-scrollbar { width: 4px; }
-.modal-task::-webkit-scrollbar-track { background: transparent; }
-.modal-task::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.13); border-radius: 99px; }
-.modal-task::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
+
+.tm-clone-btn {
+  position: absolute;
+  top: 30px;
+  right: 30px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.14);
+  background: rgba(255,255,255,0.6);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.15s, transform 0.15s;
+  color: rgba(0,0,0,0.55);
+}
+.tm-clone-btn svg { width: 15px; height: 15px; }
+.tm-clone-btn:hover { background: rgba(255,255,255,0.9); transform: scale(1.1); color: #1565C0; }
+.tm-clone-btn.hidden { display: none; }
 
 
 .tm-title {
