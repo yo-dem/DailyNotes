@@ -99,19 +99,19 @@
   <div class="modal-overlay hidden" id="taskModal">
     <div class="modal modal-task">
       <div class="tm-colors" id="tmColors"></div>
-      <input class="tm-title" id="tmTitle" type="text" placeholder="Titolo task…" autocomplete="off" spellcheck="false" />
+      <label for="tmTitle"></label><input class="tm-title" id="tmTitle" type="text" placeholder="Titolo task…" autocomplete="off" spellcheck="false" />
       <div class="tm-tags-wrap">
         <div class="tm-tag-list" id="tmTagList"></div>
         <div class="tm-new-tag-row">
-          <input class="tm-tag-input" id="tmTagInput" type="text" placeholder="Nuovo tag… (Invio per aggiungere)" autocomplete="off" />
+          <label for="tmTagInput"></label><input class="tm-tag-input" id="tmTagInput" type="text" placeholder="Nuovo tag… (Invio per aggiungere)" autocomplete="off" />
         </div>
         <div class="tm-tag-repo" id="tmTagRepo"></div>
       </div>
-      <textarea id="tmBody" class="tm-body" placeholder="Descrizione…"></textarea>
+      <label for="tmBody"></label><textarea id="tmBody" class="tm-body" placeholder="Descrizione…"></textarea>
       <div class="tm-checklist-wrap" id="tmChecklistWrap">
         <div class="tm-checklist-items" id="tmChecklistItems"></div>
         <div class="tm-checklist-add">
-          <input class="tm-check-input" id="tmCheckInput" type="text" placeholder="Aggiungi voce checklist… (Invio)" autocomplete="off" />
+          <label for="tmCheckInput"></label><input class="tm-check-input" id="tmCheckInput" type="text" placeholder="Aggiungi voce checklist… (Invio)" autocomplete="off" />
           <button class="tm-check-add-btn" id="tmCheckAddBtn" type="button">+</button>
         </div>
       </div>
@@ -119,7 +119,7 @@
         <div class="tm-assignee-list" id="tmAssigneeList"></div>
         <div class="tm-assignee-input-row">
           <svg class="tm-assignee-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          <input class="tm-assignee-input" id="tmAssigneeInput" type="text" placeholder="Aggiungi operatore… (Invio)" autocomplete="off" />
+          <label for="tmAssigneeInput"></label><input class="tm-assignee-input" id="tmAssigneeInput" type="text" placeholder="Aggiungi operatore… (Invio)" autocomplete="off" />
         </div>
         <div class="tm-assignee-repo" id="tmAssigneeRepo"></div>
       </div>
