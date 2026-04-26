@@ -2619,6 +2619,16 @@ body.pages-active .page-toolbar { display: flex; }
   font-weight: 500;
 }
 
+.kcard-assignee-badge {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 8px;
+  font-size: 0.64rem;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+}
+
 .kcard-checklist {
   padding: 0 12px 6px;
   display: flex;

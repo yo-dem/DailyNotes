@@ -65,7 +65,6 @@ let _editingId        = null;
 let _editingCol       = 'todo';
 let _editingTags      = [];
 let _editingColor     = TASK_COLORS[1];
-let _newTagColor      = TASK_COLORS[0];
 let _editingChecklist  = [];
 let _editingAssignees  = [];
 
@@ -173,14 +172,19 @@ function _buildKanbanCard(task) {
     .map(t => `<span class="kcard-tag" style="background:${_tagColor(t)}">${escHtml(t)}</span>`)
     .join('');
 
-  const assignees    = task.assignees || [];
-  const assigneeText = assignees.length ? assignees.map(escHtml).join(' · ') : 'Tutti';
-  const footerHtml   = `
+  const assignees = task.assignees || [];
+  const asgnRepo  = loadAssignees();
+  const footerHtml = `
     <div class="kcard-footer">
       <svg class="kcard-footer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
       </svg>
-      <span class="kcard-footer-names${assignees.length ? ' assigned' : ''}">${assigneeText}</span>
+      ${assignees.length
+        ? assignees.map(n => {
+            const c = asgnRepo.find(a => a.name === n)?.color || TASK_COLORS[3];
+            return `<span class="kcard-assignee-badge" style="background:${c}">${escHtml(n)}</span>`;
+          }).join('')
+        : `<span class="kcard-footer-names">Tutti</span>`}
     </div>`;
 
   const cl = task.checklist || [];
@@ -625,7 +629,6 @@ function _openModal(taskId, col) {
   _editingCol   = col || task?.col || loadCols()[0]?.id || 'todo';
   _editingTags  = task ? [...(task.tags || [])] : [];
   _editingColor = task?.color || TASK_COLORS[1];
-  _newTagColor  = TASK_COLORS[0];
 
   document.getElementById('tmTitle').value    = task?.title || '';
   document.getElementById('tmBody').value     = task?.body  || '';
@@ -636,7 +639,6 @@ function _openModal(taskId, col) {
 
   _renderTmTags();
   _renderTmColors();
-  _renderTmTagColors();
   _renderTagRepo();
   _renderTmChecklist();
   _renderTmAssignees();
@@ -705,19 +707,6 @@ function _renderTmColors() {
   });
 }
 
-function _renderTmTagColors() {
-  const wrap = document.getElementById('tmTagColors');
-  if (!wrap) return;
-  wrap.innerHTML = '';
-  TASK_COLORS.forEach(c => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'tm-tc-dot' + (c === _newTagColor ? ' tm-tc-dot--sel' : '');
-    btn.style.background = c;
-    btn.addEventListener('click', () => { _newTagColor = c; _renderTmTagColors(); });
-    wrap.appendChild(btn);
-  });
-}
 
 function _renderTagRepo() {
   const wrap = document.getElementById('tmTagRepo');
@@ -727,20 +716,6 @@ function _renderTagRepo() {
     const chip = document.createElement('span');
     chip.className = 'tm-repo-chip';
     chip.style.setProperty('--chip-color', tagObj.color);
-
-    const swatch = document.createElement('span');
-    swatch.className        = 'tm-repo-chip-swatch';
-    swatch.style.background = tagObj.color;
-    swatch.addEventListener('click', e => {
-      e.stopPropagation();
-      _openMiniColorPicker(swatch, tagObj.color, newColor => {
-        const repo = loadTags();
-        const found = repo.find(t => t.name === tagObj.name);
-        if (found) { found.color = newColor; _saveTags(repo); }
-        _renderTagRepo();
-        _renderTmTags();
-      });
-    });
 
     const label = document.createElement('span');
     label.className   = 'tm-repo-chip-label';
@@ -763,7 +738,6 @@ function _renderTagRepo() {
       _renderTagRepo();
     });
 
-    chip.appendChild(swatch);
     chip.appendChild(label);
     chip.appendChild(del);
     wrap.appendChild(chip);
@@ -906,7 +880,7 @@ function _addPendingTag() {
   const val   = input.value.trim().replace(/,/g, '');
   if (!val) return;
   const repo = loadTags();
-  if (!repo.find(t => t.name === val)) { repo.push({ name: val, color: _newTagColor }); _saveTags(repo); }
+  if (!repo.find(t => t.name === val)) { repo.push({ name: val, color: TASK_COLORS[0] }); _saveTags(repo); }
   if (!_editingTags.includes(val)) { _editingTags.push(val); _renderTmTags(); }
   _renderTagRepo();
   input.value = '';
