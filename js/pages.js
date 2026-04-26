@@ -218,6 +218,14 @@ function _onKeyDown(e) {
   if (e.key === 'Tab') {
     e.preventDefault();
     document.execCommand(e.shiftKey ? 'outdent' : 'indent');
+    return;
+  }
+  // On macOS, press-and-hold shows an accent picker instead of repeating.
+  // Intercept repeated keydowns and insert the character directly so the
+  // browser never sees the "held" state that triggers the OS popup.
+  if (e.repeat && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+    e.preventDefault();
+    document.execCommand('insertText', false, e.key);
   }
 }
 
