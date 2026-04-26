@@ -88,7 +88,7 @@ document.getElementById('addTodo').addEventListener('click', () => {
   if (v === 'todo')  addTodo();
   if (v === 'notes') addNote();
   if (v === 'pages') addPage();
-  if (v === 'task')  addKanbanTask();
+  if (v === 'task')  addKanbanColumn();
 });
 
 // ── Animated day change (shared by swipe + wheel + arrows) ─

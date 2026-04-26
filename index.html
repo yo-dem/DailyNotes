@@ -63,32 +63,7 @@
 
     <!-- Task Manager (Kanban) -->
     <div id="taskView" class="view">
-      <div class="kanban-board">
-        <div class="kanban-col" data-col="todo">
-          <div class="kanban-col-header">
-            <span class="kanban-col-dot" style="background:#0288D1"></span>
-            <span class="kanban-col-title">To Do</span>
-            <button class="kanban-add-btn" title="Aggiungi task">+</button>
-          </div>
-          <div class="kanban-cards" id="kanban-todo" data-col="todo"></div>
-        </div>
-        <div class="kanban-col" data-col="doing">
-          <div class="kanban-col-header">
-            <span class="kanban-col-dot" style="background:#E65100"></span>
-            <span class="kanban-col-title">Doing</span>
-            <button class="kanban-add-btn" title="Aggiungi task">+</button>
-          </div>
-          <div class="kanban-cards" id="kanban-doing" data-col="doing"></div>
-        </div>
-        <div class="kanban-col" data-col="done">
-          <div class="kanban-col-header">
-            <span class="kanban-col-dot" style="background:#2E7D32"></span>
-            <span class="kanban-col-title">Done</span>
-            <button class="kanban-add-btn" title="Aggiungi task">+</button>
-          </div>
-          <div class="kanban-cards" id="kanban-done" data-col="done"></div>
-        </div>
-      </div>
+      <div class="kanban-board" id="kanbanBoard"></div>
     </div>
 
     <!-- Note -->
@@ -128,7 +103,11 @@
       <input class="tm-title" id="tmTitle" type="text" placeholder="Titolo task…" autocomplete="off" spellcheck="false" />
       <div class="tm-tags-wrap">
         <div class="tm-tag-list" id="tmTagList"></div>
-        <input class="tm-tag-input" id="tmTagInput" type="text" placeholder="Aggiungi tag (Invio)…" autocomplete="off" />
+        <div class="tm-new-tag-row">
+          <input class="tm-tag-input" id="tmTagInput" type="text" placeholder="Nuovo tag… (Invio per aggiungere)" autocomplete="off" />
+          <div class="tm-tc-dots" id="tmTagColors"></div>
+        </div>
+        <div class="tm-tag-repo" id="tmTagRepo"></div>
       </div>
       <textarea id="tmBody" class="tm-body" placeholder="Descrizione…"></textarea>
       <div class="tm-colors" id="tmColors"></div>

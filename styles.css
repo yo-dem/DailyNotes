@@ -2395,6 +2395,21 @@ body.pages-active .page-toolbar { display: flex; }
   flex-shrink: 0;
 }
 
+.kanban-col-grip {
+  color: rgba(255,255,255,0.35);
+  font-size: 1.05rem;
+  cursor: grab;
+  user-select: none;
+  flex-shrink: 0;
+  line-height: 1;
+  padding: 2px 0;
+  transition: color 0.12s;
+}
+.kanban-col-grip:hover  { color: rgba(255,255,255,0.7); }
+.kanban-col-grip:active { cursor: grabbing; }
+
+.kanban-col--ghost { opacity: 0.25; }
+
 .kanban-col-dot {
   width: 9px;
   height: 9px;
@@ -2409,25 +2424,58 @@ body.pages-active .page-toolbar { display: flex; }
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: rgba(255,255,255,0.9);
+  outline: none;
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin: -1px -5px;
+  cursor: default;
+}
+.kanban-col-title:focus {
+  cursor: text;
+  background: rgba(255,255,255,0.12);
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.28);
+  letter-spacing: 0.05em;
+}
+
+.kanban-col-footer {
+  flex-shrink: 0;
+  padding: 6px 10px 10px;
+  border-top: 1px solid rgba(255,255,255,0.08);
 }
 
 .kanban-add-btn {
-  width: 24px;
-  height: 24px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.45);
+  font-size: 0.78rem;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 5px 4px;
   border-radius: 8px;
-  background: rgba(255,255,255,0.14);
-  border: 1px solid rgba(255,255,255,0.24);
-  color: white;
-  font-size: 1.1rem;
+  transition: color 0.12s, background 0.12s;
+  letter-spacing: 0.02em;
+}
+.kanban-add-btn:hover { color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.08); }
+
+.kanban-del-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.16);
+  color: rgba(255,255,255,0.45);
+  font-size: 1rem;
   line-height: 1;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.1s;
+  transition: background 0.12s, color 0.12s;
   flex-shrink: 0;
+  padding: 0;
 }
-.kanban-add-btn:hover { background: rgba(255,255,255,0.26); }
+.kanban-del-btn:hover { background: rgba(198,40,40,0.35); color: #ff8a80; border-color: rgba(198,40,40,0.5); }
 
 /* ── Cards zone ── */
 .kanban-cards {
@@ -2453,7 +2501,8 @@ body.pages-active .page-toolbar { display: flex; }
   box-shadow: 0 2px 8px rgba(0,0,0,0.14);
   transition: transform 0.15s, box-shadow 0.15s;
   user-select: none;
-  cursor: default;
+  cursor: pointer;
+  position: relative;
 }
 .kcard:hover {
   transform: translateY(-2px);
@@ -2461,9 +2510,34 @@ body.pages-active .page-toolbar { display: flex; }
 }
 .kcard.dragging { opacity: 0.35; transform: rotate(1.5deg); }
 
+.kcard-del {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0,0,0,0.1);
+  color: #666;
+  font-size: 1rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.12s, color 0.12s;
+  padding: 0;
+  z-index: 2;
+}
+.kcard:hover .kcard-del { opacity: 1; }
+.kcard-del:hover { background: rgba(198,40,40,0.18); color: #c62828; }
+@media (hover: none) { .kcard-del { opacity: 0.45; } }
+
 .kcard-stripe { height: 4px; }
 
-.kcard-content { padding: 10px 12px 6px; }
+.kcard-content { padding: 10px 30px 6px 12px; }
 
 .kcard-title {
   font-size: 0.87rem;
@@ -2502,8 +2576,8 @@ body.pages-active .page-toolbar { display: flex; }
 .kcard-actions {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 2px 8px 8px;
-  gap: 2px;
 }
 
 .kcard-mv {
@@ -2521,19 +2595,6 @@ body.pages-active .page-toolbar { display: flex; }
 .kcard-mv:hover:not(:disabled) { background: rgba(0,0,0,0.1); }
 .kcard-mv:disabled { opacity: 0.22; cursor: default; }
 
-.kcard-edit {
-  flex: 1;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #aaa;
-  font-size: 0.95rem;
-  padding: 4px;
-  text-align: center;
-  transition: color 0.12s;
-  font-family: inherit;
-}
-.kcard-edit:hover { color: #333; }
 
 /* ── Task modal ── */
 .modal-task {
@@ -2546,10 +2607,10 @@ body.pages-active .page-toolbar { display: flex; }
 }
 
 .tm-title {
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.22);
+  background: rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.15);
   border-radius: 12px;
-  color: white;
+  color: #1a1a2e;
   padding: 11px 14px;
   font-size: 1rem;
   font-family: inherit;
@@ -2558,20 +2619,97 @@ body.pages-active .page-toolbar { display: flex; }
   user-select: text;
   -webkit-user-select: text;
 }
-.tm-title::placeholder { color: rgba(255,255,255,0.38); font-weight: 400; }
-.tm-title:focus { outline: none; border-color: rgba(255,255,255,0.5); }
+.tm-title::placeholder { color: rgba(0,0,0,0.32); font-weight: 400; }
+.tm-title:focus { outline: none; border-color: rgba(0,0,0,0.35); }
 
 .tm-tags-wrap {
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(0,0,0,0.05);
+  border: 1px solid rgba(0,0,0,0.13);
   border-radius: 12px;
   padding: 8px 10px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-  min-height: 44px;
+  flex-direction: column;
+  gap: 7px;
 }
+
+.tm-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-height: 18px;
+}
+
+.tm-new-tag-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tm-tc-dots {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.tm-tc-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(0,0,0,0.15);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: transform 0.1s, border-color 0.1s, box-shadow 0.1s;
+}
+.tm-tc-dot:hover { transform: scale(1.18); }
+.tm-tc-dot--sel  { border-color: #333; transform: scale(1.22); box-shadow: 0 0 0 2px rgba(0,0,0,0.18); }
+
+.tm-tag-repo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.tm-tag-repo:empty { display: none; }
+
+.tm-repo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 4px 2px 9px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border: 1.5px solid var(--chip-color, #aaa);
+  color: var(--chip-color, #aaa);
+  background: transparent;
+  transition: background 0.12s, color 0.12s, opacity 0.12s;
+  opacity: 0.65;
+}
+.tm-repo-chip:hover { opacity: 1; }
+.tm-repo-chip--active {
+  background: var(--chip-color, #aaa);
+  color: #fff;
+  opacity: 1;
+}
+.tm-repo-chip--active .tm-repo-chip-del { color: rgba(255,255,255,0.75); }
+
+.tm-repo-chip-label {
+  cursor: pointer;
+}
+
+.tm-repo-chip-del {
+  background: none;
+  border: none;
+  color: var(--chip-color, #aaa);
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+  font-family: inherit;
+  opacity: 0.6;
+  transition: opacity 0.12s;
+}
+.tm-repo-chip-del:hover { opacity: 1; }
 
 .tm-chip {
   display: inline-flex;
@@ -2598,7 +2736,7 @@ body.pages-active .page-toolbar { display: flex; }
 .tm-tag-input {
   background: none;
   border: none;
-  color: white;
+  color: #1a1a2e;
   font-family: inherit;
   font-size: 0.82rem;
   outline: none;
@@ -2607,13 +2745,13 @@ body.pages-active .page-toolbar { display: flex; }
   user-select: text;
   -webkit-user-select: text;
 }
-.tm-tag-input::placeholder { color: rgba(255,255,255,0.32); }
+.tm-tag-input::placeholder { color: rgba(0,0,0,0.32); }
 
 .tm-body {
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.13);
   border-radius: 12px;
-  color: white;
+  color: #1a1a2e;
   padding: 11px 14px;
   font-size: 0.88rem;
   font-family: inherit;
@@ -2623,8 +2761,8 @@ body.pages-active .page-toolbar { display: flex; }
   user-select: text;
   -webkit-user-select: text;
 }
-.tm-body::placeholder { color: rgba(255,255,255,0.32); }
-.tm-body:focus { outline: none; border-color: rgba(255,255,255,0.5); }
+.tm-body::placeholder { color: rgba(0,0,0,0.32); }
+.tm-body:focus { outline: none; border-color: rgba(0,0,0,0.35); }
 
 .tm-colors {
   display: flex;
@@ -2637,16 +2775,16 @@ body.pages-active .page-toolbar { display: flex; }
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  border: 2px solid rgba(255,255,255,0.35);
+  border: 2px solid rgba(0,0,0,0.18);
   cursor: pointer;
   padding: 0;
-  transition: transform 0.1s, border-color 0.1s;
+  transition: transform 0.1s, border-color 0.1s, box-shadow 0.1s;
 }
 .tm-color-dot:hover { transform: scale(1.12); }
 .tm-color-dot--sel {
-  border-color: #fff;
+  border-color: #333;
   transform: scale(1.2);
-  box-shadow: 0 0 0 2px rgba(255,255,255,0.28);
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.2);
 }
 
 /* ── Shared danger button ── */
