@@ -532,7 +532,7 @@ body.todo-active .main,
 body.pages-active .main,
 body.task-active .main { padding-top: 54px; padding-bottom: 80px; }
 
-body.task-active .main { padding-left: 12px; padding-right: 12px; }
+body.task-active .main { padding-left: 12px; padding-right: 12px; max-width: 100%; }
 
 /* Watermarks hidden in pages / task mode too */
 body.pages-active .watermark-day,
@@ -2367,8 +2367,15 @@ body.pages-active .page-toolbar { display: flex; }
   height: 100%;
   min-height: 0;
   overflow-x: auto;
-  padding: 4px 0 8px;
+  justify-content: safe center;
+  padding: 4px 0 12px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.22) transparent;
 }
+.kanban-board::-webkit-scrollbar { height: 5px; }
+.kanban-board::-webkit-scrollbar-track { background: transparent; }
+.kanban-board::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.22); border-radius: 99px; }
+.kanban-board::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
 
 /* ── Columns ── */
 .kanban-col {
@@ -2508,7 +2515,8 @@ body.pages-active .page-toolbar { display: flex; }
   transform: translateY(-2px);
   box-shadow: 0 5px 18px rgba(0,0,0,0.2);
 }
-.kcard.dragging { opacity: 0.35; transform: rotate(1.5deg); }
+.kcard.dragging   { opacity: 0.35; transform: rotate(1.5deg); }
+.kcard--ghost     { opacity: 0.25; }
 
 .kcard-del {
   position: absolute;
@@ -2537,7 +2545,27 @@ body.pages-active .page-toolbar { display: flex; }
 
 .kcard-stripe { height: 4px; }
 
-.kcard-content { padding: 10px 30px 6px 12px; }
+.kcard-content {
+  padding: 8px 30px 6px 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+}
+
+.kcard-grip {
+  color: rgba(0,0,0,0.2);
+  cursor: grab;
+  font-size: 0.9rem;
+  user-select: none;
+  flex-shrink: 0;
+  padding-top: 2px;
+  line-height: 1;
+  transition: color 0.12s;
+}
+.kcard-grip:hover  { color: rgba(0,0,0,0.5); }
+.kcard-grip:active { cursor: grabbing; }
+
+.kcard-text { flex: 1; min-width: 0; }
 
 .kcard-title {
   font-size: 0.87rem;
@@ -2672,6 +2700,7 @@ body.pages-active .page-toolbar { display: flex; }
 .tm-tag-repo:empty { display: none; }
 
 .tm-repo-chip {
+  --chip-color: #aaa;
   display: inline-flex;
   align-items: center;
   gap: 3px;
@@ -2679,15 +2708,15 @@ body.pages-active .page-toolbar { display: flex; }
   border-radius: 10px;
   font-size: 0.7rem;
   font-weight: 600;
-  border: 1.5px solid var(--chip-color, #aaa);
-  color: var(--chip-color, #aaa);
+  border: 1.5px solid var(--chip-color);
+  color: var(--chip-color);
   background: transparent;
   transition: background 0.12s, color 0.12s, opacity 0.12s;
   opacity: 0.65;
 }
 .tm-repo-chip:hover { opacity: 1; }
 .tm-repo-chip--active {
-  background: var(--chip-color, #aaa);
+  background: var(--chip-color);
   color: #fff;
   opacity: 1;
 }
@@ -2700,7 +2729,7 @@ body.pages-active .page-toolbar { display: flex; }
 .tm-repo-chip-del {
   background: none;
   border: none;
-  color: var(--chip-color, #aaa);
+  color: var(--chip-color);
   font-size: 0.95rem;
   line-height: 1;
   padding: 0 2px;

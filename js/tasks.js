@@ -191,9 +191,12 @@ function _buildKanbanCard(task, cols) {
     <button class="kcard-del" title="Elimina">×</button>
     <div class="kcard-stripe" style="background:${color}"></div>
     <div class="kcard-content">
-      <div class="kcard-title">${escHtml(task.title || 'Senza titolo')}</div>
-      ${tagsHtml ? `<div class="kcard-tags">${tagsHtml}</div>` : ''}
-      ${task.body ? `<div class="kcard-desc">${escHtml(task.body)}</div>` : ''}
+      <span class="kcard-grip" title="Riordina">⠿</span>
+      <div class="kcard-text">
+        <div class="kcard-title">${escHtml(task.title || 'Senza titolo')}</div>
+        ${tagsHtml ? `<div class="kcard-tags">${tagsHtml}</div>` : ''}
+        ${task.body ? `<div class="kcard-desc">${escHtml(task.body)}</div>` : ''}
+      </div>
     </div>
     <div class="kcard-actions">
       <button class="kcard-mv" data-dir="-1" ${colIdx <= 0 ? 'disabled' : ''} title="Colonna precedente">←</button>
@@ -234,7 +237,10 @@ function _buildKanbanCard(task, cols) {
     });
   });
 
+  card.querySelector('.kcard-grip').addEventListener('pointerdown', _onCardPointerDown);
+
   card.addEventListener('dragstart', e => {
+    if (_cardDrag) { e.preventDefault(); return; }
     _dragId = task.id;
     requestAnimationFrame(() => card.classList.add('dragging'));
     e.dataTransfer.effectAllowed = 'move';
@@ -246,6 +252,143 @@ function _buildKanbanCard(task, cols) {
   });
 
   return card;
+}
+
+// ── Card drag – within-column reorder (pointer-based) ────
+let _cardDrag = null;
+
+function _onCardPointerDown(e) {
+  if (e.button !== 0) return;
+  if (_cardDrag || _colDrag) return;
+  e.preventDefault();
+
+  const card     = e.currentTarget.closest('.kcard');
+  const cardsEl  = card.closest('.kanban-cards');
+  const colId    = cardsEl.dataset.col;
+  const cardEls  = [...cardsEl.querySelectorAll('.kcard')];
+
+  cardEls.forEach(c => { c.style.transition = 'none'; c.style.transform = ''; });
+  const slotRects = cardEls.map(c => {
+    const r = c.getBoundingClientRect();
+    return { left: r.left, top: r.top, width: r.width, height: r.height };
+  });
+
+  const srcIdx = cardEls.indexOf(card);
+  const sr     = slotRects[srcIdx];
+
+  const clone = card.cloneNode(true);
+  Object.assign(clone.style, {
+    position:      'fixed',
+    left:          `${sr.left}px`,
+    top:           `${sr.top}px`,
+    width:         `${sr.width}px`,
+    height:        `${sr.height}px`,
+    margin:        '0',
+    zIndex:        '2000',
+    pointerEvents: 'none',
+    transition:    'transform 0.15s ease, box-shadow 0.15s ease',
+    transform:     'scale(1.03)',
+    boxShadow:     '0 12px 36px rgba(0,0,0,0.28)',
+  });
+  document.body.appendChild(clone);
+  card.classList.add('kcard--ghost');
+
+  const origOrder = loadKanban().filter(t => t.col === colId).map(t => t.id);
+
+  _cardDrag = {
+    card, clone, cardsEl, colId,
+    srcIdx, slotRects, origOrder,
+    nearestIdx:   srcIdx,
+    currentOrder: [...origOrder],
+    ox: e.clientX - sr.left,
+    oy: e.clientY - sr.top,
+    moved: false,
+  };
+
+  document.addEventListener('pointermove',   _onCardPointerMove);
+  document.addEventListener('pointerup',     _onCardPointerUp);
+  document.addEventListener('pointercancel', _onCardPointerUp);
+}
+
+function _onCardPointerMove(e) {
+  if (!_cardDrag) return;
+  const { clone, slotRects, srcIdx, origOrder, ox, oy, card } = _cardDrag;
+
+  const x = e.clientX - ox;
+  const y = e.clientY - oy;
+
+  if (!_cardDrag.moved) {
+    const dy = e.clientY - (slotRects[srcIdx].top + oy);
+    if (Math.abs(dy) < 8) return;
+    _cardDrag.moved = true;
+  }
+
+  clone.style.left = `${x}px`;
+  clone.style.top  = `${y}px`;
+
+  const cy = y + slotRects[srcIdx].height / 2;
+
+  let nearestIdx = srcIdx;
+  let minDist    = Infinity;
+  slotRects.forEach((r, i) => {
+    const d = Math.abs(cy - (r.top + r.height / 2));
+    if (d < minDist) { minDist = d; nearestIdx = i; }
+  });
+
+  if (nearestIdx === _cardDrag.nearestIdx) return;
+  _cardDrag.nearestIdx = nearestIdx;
+
+  const newOrder = [...origOrder];
+  const [moved]  = newOrder.splice(srcIdx, 1);
+  newOrder.splice(nearestIdx, 0, moved);
+  _cardDrag.currentOrder = newOrder;
+
+  [..._cardDrag.cardsEl.querySelectorAll('.kcard')].forEach((c, domIdx) => {
+    if (c === card) return;
+    const targetIdx = newOrder.indexOf(c.dataset.id);
+    if (targetIdx === -1) return;
+    const tr = slotRects[targetIdx];
+    const cr = slotRects[domIdx];
+    c.style.transition = 'transform 0.2s cubic-bezier(0.25,0.46,0.45,0.94)';
+    c.style.transform  = `translateY(${tr.top - cr.top}px)`;
+  });
+}
+
+function _onCardPointerUp() {
+  if (!_cardDrag) return;
+  const { card, clone, currentOrder, slotRects, colId, srcIdx, moved } = _cardDrag;
+
+  document.removeEventListener('pointermove',   _onCardPointerMove);
+  document.removeEventListener('pointerup',     _onCardPointerUp);
+  document.removeEventListener('pointercancel', _onCardPointerUp);
+
+  _cardDrag = null;
+
+  if (!moved) {
+    clone.remove();
+    card.classList.remove('kcard--ghost');
+    return;
+  }
+
+  const finalIdx = currentOrder.indexOf(card.dataset.id);
+  const fr       = slotRects[finalIdx];
+
+  clone.style.transition = 'left 0.2s ease, top 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease';
+  clone.style.left       = `${fr.left}px`;
+  clone.style.top        = `${fr.top}px`;
+  clone.style.transform  = 'scale(1)';
+  clone.style.boxShadow  = '0 2px 8px rgba(0,0,0,0.14)';
+
+  const all      = loadKanban();
+  const colTasks = currentOrder.map(id => all.find(t => t.id === id)).filter(Boolean);
+  let   ci       = 0;
+  const reordered = all.map(t => t.col === colId ? colTasks[ci++] : t);
+
+  setTimeout(() => {
+    clone.remove();
+    _saveKanban(reordered);
+    renderKanban();
+  }, 200);
 }
 
 // ── Column drag (pointer-based) ──────────────────────────
