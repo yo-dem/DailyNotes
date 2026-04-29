@@ -40,7 +40,7 @@ function _buildCard(todo, index) {
         <button class="card-check${todo.done ? ' checked' : ''}" title="${todo.done ? 'Segna come da fare' : 'Segna come fatto'}">${todo.done ? SVG.checkFull : SVG.checkEmpty}</button>
         <div class="card-title-wrap" data-value="Titolo...">
           <input class="card-title" data-accent="${accentIdx}" type="text"
-                 value="${escHtml(todo.title)}" placeholder="Titolo..." spellcheck="false" />
+                 value="${escHtml(todo.title)}" placeholder="Titolo..." spellcheck="false" readonly />
         </div>
       </div>
       <div class="card-preview">${escHtml(previewText(todo.content))}</div>
@@ -74,21 +74,12 @@ function _bindCardEvents(li, todo) {
   titleWrap.dataset.value = titleInput.value || 'Titolo...';
 
   dragHandle.addEventListener('pointerdown', _onTodoDragHandle);
+  li.addEventListener('pointerdown', _onTodoCardBodyDrag);
 
   checkBtn.addEventListener('click', e => {
     e.stopPropagation();
     updateField(todo.id, 'done', !todo.done);
   });
-
-  titleInput.addEventListener('input', () => {
-    titleWrap.dataset.value = titleInput.value || 'Titolo...';
-  });
-  titleInput.addEventListener('change', () => updateField(todo.id, 'title', titleInput.value));
-  titleInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); titleInput.blur(); }
-  });
-
-  preview.addEventListener('click', () => openNoteModal(todo.id));
 
   reminderBtn.addEventListener('click', e => {
     e.stopPropagation();
@@ -109,7 +100,7 @@ function _bindCardEvents(li, todo) {
   });
 
   li.addEventListener('dblclick', e => {
-    if (e.target === titleInput) return;
+    if (e.target.closest('button')) return;
     openNoteModal(todo.id);
   });
 }
@@ -318,4 +309,131 @@ function _onTodoLostCapture() {
     c.style.transform  = '';
   });
   _todoDrag = null;
+}
+
+// ── Drag from card body (anywhere except buttons / input) ──
+function _onTodoCardBodyDrag(e) {
+  if (e.button !== 0) return;
+  if (_todoDrag) return;
+  if (e.target.closest('button')) return;
+  if (e.target.closest('.card-drag-handle')) return; // già gestito da _onTodoDragHandle
+
+  const card = e.target.closest('.todo-card');
+  if (!card) return;
+
+  const pid    = e.pointerId;
+  const startX = e.clientX, startY = e.clientY;
+  let activated = false;
+
+  function activate() {
+    const $list    = document.getElementById('todoList');
+    const cards    = [...$list.querySelectorAll('.todo-card')];
+    cards.forEach(c => { c.style.transition = 'none'; c.style.transform = ''; });
+    const slotRects = cards.map(c => {
+      const r = c.getBoundingClientRect();
+      return { left: r.left, top: r.top, width: r.width, height: r.height };
+    });
+    const srcIdx = cards.indexOf(card);
+    if (srcIdx < 0) return false;
+    const sr = slotRects[srcIdx];
+
+    const clone = card.cloneNode(true);
+    Object.assign(clone.style, {
+      position: 'fixed', left: `${sr.left}px`, top: `${sr.top}px`,
+      width: `${sr.width}px`, height: `${sr.height}px`,
+      margin: '0', zIndex: '2000', pointerEvents: 'none', willChange: 'top',
+      transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+      transform: 'scale(1.03)', boxShadow: '0 24px 52px rgba(0,0,0,0.32)',
+    });
+    document.body.appendChild(clone);
+    card.classList.add('todo-card--ghost');
+
+    _todoDrag = {
+      card, clone, srcIdx, slotRects,
+      nearestIdx:   srcIdx,
+      currentOrder: getTodos().map(t => t.id),
+      ox: startX - sr.left,
+      oy: startY - sr.top,
+      moved: true,
+    };
+    activated = true;
+    return true;
+  }
+
+  function onMove(ev) {
+    if (ev.pointerId !== pid) return;
+    if (!activated) {
+      if (Math.hypot(ev.clientX - startX, ev.clientY - startY) < 8) return;
+      if (!activate()) { cleanup(); return; }
+    }
+    if (!_todoDrag) return;
+
+    const { clone, slotRects, srcIdx, ox, oy } = _todoDrag;
+    const y = ev.clientY - oy;
+    clone.style.left = `${ev.clientX - ox}px`;
+    clone.style.top  = `${y}px`;
+
+    const cloneCenterY = y + slotRects[srcIdx].height / 2;
+    let nearestIdx = srcIdx, minDist = Infinity;
+    slotRects.forEach((r, i) => {
+      const d = Math.abs(cloneCenterY - (r.top + r.height / 2));
+      if (d < minDist) { minDist = d; nearestIdx = i; }
+    });
+
+    if (nearestIdx === _todoDrag.nearestIdx) return;
+    _todoDrag.nearestIdx = nearestIdx;
+    const ids      = getTodos().map(t => t.id);
+    const newOrder = [...ids];
+    const [moved]  = newOrder.splice(srcIdx, 1);
+    newOrder.splice(nearestIdx, 0, moved);
+    _todoDrag.currentOrder = newOrder;
+
+    const $list = document.getElementById('todoList');
+    [...$list.querySelectorAll('.todo-card')].forEach((c, domIdx) => {
+      if (c === card) return;
+      const targetIdx = newOrder.indexOf(c.dataset.id);
+      const tr = slotRects[targetIdx];
+      const cr = slotRects[domIdx];
+      c.style.transition = 'transform 0.2s cubic-bezier(0.25,0.46,0.45,0.94)';
+      c.style.transform  = `translateY(${tr.top - cr.top}px)`;
+    });
+  }
+
+  function onUp(ev) {
+    if (ev.pointerId !== pid) return;
+    cleanup();
+    if (!activated || !_todoDrag) { _todoDrag = null; return; }
+
+    const { clone, currentOrder, slotRects } = _todoDrag;
+    const finalIdx = currentOrder.indexOf(card.dataset.id);
+    const fr       = slotRects[finalIdx];
+
+    clone.style.transition = 'left 0.2s ease, top 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease';
+    clone.style.left       = `${fr.left}px`;
+    clone.style.top        = `${fr.top}px`;
+    clone.style.transform  = 'scale(1)';
+    clone.style.boxShadow  = '0 4px 16px rgba(0,0,0,0.12)';
+
+    const thisDrag = _todoDrag;
+    setTimeout(() => {
+      clone.remove();
+      if (_todoDrag === thisDrag) {
+        _todoDrag = null;
+        const todos     = getTodos();
+        const reordered = currentOrder.map(id => todos.find(t => t.id === id)).filter(Boolean);
+        setTodos(reordered);
+        renderTodos();
+      }
+    }, 200);
+  }
+
+  function cleanup() {
+    document.removeEventListener('pointermove',   onMove);
+    document.removeEventListener('pointerup',     onUp);
+    document.removeEventListener('pointercancel', onUp);
+  }
+
+  document.addEventListener('pointermove',   onMove);
+  document.addEventListener('pointerup',     onUp);
+  document.addEventListener('pointercancel', onUp);
 }

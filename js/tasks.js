@@ -73,6 +73,13 @@ let _cardDrag = null;
 let _colDrag  = null;
 let _dblTap   = { cardId: null, time: 0 };
 
+function _addTaskToCol(colId) {
+  const all = loadKanban();
+  all.push({ id: uid(), col: colId, title: _nextTaskTitle(), body: '', tags: [], color: TASK_COLORS[1] });
+  _saveKanban(all);
+  renderKanban();
+}
+
 // ── Render ───────────────────────────────────────────────
 function renderKanban() {
   const $board = document.getElementById('kanbanBoard');
@@ -131,11 +138,29 @@ function renderKanban() {
 
     // Add-task button
     footer.querySelector('.kanban-add-btn').addEventListener('click', () => {
-      const all = loadKanban();
-      all.push({ id: uid(), col: col.id, title: _nextTaskTitle(), body: '', tags: [], color: TASK_COLORS[1] });
-      _saveKanban(all);
-      renderKanban();
+      _addTaskToCol(col.id);
     });
+
+    // Double-click on column body adds a task
+    cardsEl.addEventListener('dblclick', e => {
+      if (e.target.closest('.kcard')) return;
+      _addTaskToCol(col.id);
+    });
+
+    // Touch double-tap on column body
+    let _colTapTimer = null;
+    let _colTapCount = 0;
+    cardsEl.addEventListener('touchend', e => {
+      if (e.target.closest('.kcard')) return;
+      _colTapCount++;
+      if (_colTapCount === 1) {
+        _colTapTimer = setTimeout(() => { _colTapCount = 0; }, 350);
+      } else {
+        clearTimeout(_colTapTimer);
+        _colTapCount = 0;
+        _addTaskToCol(col.id);
+      }
+    }, { passive: true });
 
     // Delete column
     header.querySelector('.kanban-del-btn').addEventListener('click', () => {
