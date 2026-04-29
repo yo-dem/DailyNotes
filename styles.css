@@ -130,6 +130,22 @@ body {
   text-transform: uppercase;
 }
 
+/* ── Clock ── */
+.current-time {
+  font-size: clamp(18px, 2.8vw, 2.4rem);
+  font-weight: 200;
+  letter-spacing: 0.12em;
+  opacity: 0.82;
+  color: var(--white);
+  text-align: center;
+}
+
+body.notes-active .current-time,
+body.todo-active .current-time,
+body.task-active .current-time {
+  display: none;
+}
+
 /* ── Today chip ── */
 .today-chip {
   background: rgba(255,255,255,0.18);
@@ -209,7 +225,7 @@ body {
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 220px));
+  grid-template-columns: repeat(3, minmax(0, 220px));
   gap: 24px;
   justify-content: center;
   width: 100%;
@@ -294,10 +310,9 @@ body.notes-active #notesView {
 }
 
 
-/* ── Compact header (shared notes / to-do / pages / task) ── */
+/* ── Compact header (shared notes / to-do / task) ── */
 body.notes-active .header,
 body.todo-active .header,
-body.pages-active .header,
 body.task-active .header {
   padding: 8px 12px;
   gap: 10px;
@@ -310,7 +325,6 @@ body.task-active .header {
 /* frosted-glass layer on ::before — text stays fully opaque */
 body.notes-active .header::before,
 body.todo-active .header::before,
-body.pages-active .header::before,
 body.task-active .header::before {
   content: '';
   position: absolute;
@@ -337,7 +351,6 @@ body.notes-active .header:focus-within::before {
 
 /* To-do header */
 body.todo-active .header,
-body.pages-active .header,
 body.task-active .header {
   position: fixed;
   top: 0;
@@ -345,14 +358,11 @@ body.task-active .header {
   right: 0;
 }
 body.todo-active .header::before,
-body.pages-active .header::before,
 body.task-active .header::before {
   background: rgba(16, 80, 160, 0.65);
 }
 body.todo-active .header:hover::before,
 body.todo-active .header:focus-within::before,
-body.pages-active .header:hover::before,
-body.pages-active .header:focus-within::before,
 body.task-active .header:hover::before,
 body.task-active .header:focus-within::before {
   opacity: 0.72;
@@ -360,7 +370,6 @@ body.task-active .header:focus-within::before {
 
 body.notes-active .header .nav-btn,
 body.todo-active .header .nav-btn,
-body.pages-active .header .nav-btn,
 body.task-active .header .nav-btn {
   width: 32px;
   height: 32px;
@@ -370,7 +379,6 @@ body.task-active .header .nav-btn {
 
 body.notes-active .header .current-date,
 body.todo-active .header .current-date,
-body.pages-active .header .current-date,
 body.task-active .header .current-date {
   font-size: 0.95rem;
   font-weight: 500;
@@ -380,14 +388,12 @@ body.task-active .header .current-date {
 
 body.notes-active .header .date-day-name,
 body.todo-active .header .date-day-name,
-body.pages-active .header .date-day-name,
 body.task-active .header .date-day-name {
   display: none;
 }
 
 body.notes-active .header-center,
 body.todo-active .header-center,
-body.pages-active .header-center,
 body.task-active .header-center {
   gap: 2px;
   justify-content: center;
@@ -397,7 +403,6 @@ body.task-active .header-center {
 
 body.notes-active .today-chip,
 body.todo-active .today-chip,
-body.pages-active .today-chip,
 body.task-active .today-chip {
   padding: 2px 10px;
   font-size: 0.62rem;
@@ -408,7 +413,6 @@ body.task-active .today-chip {
 
 body.notes-active .today-chip.hidden,
 body.todo-active .today-chip.hidden,
-body.pages-active .today-chip.hidden,
 body.task-active .today-chip.hidden {
   display: none;
 }
@@ -422,7 +426,6 @@ body.notes-active .watermark-month {
 /* FAB slightly smaller in sub-views */
 body.notes-active .fab,
 body.todo-active .fab,
-body.pages-active .fab,
 body.task-active .fab {
   width: 50px;
   height: 50px;
@@ -430,14 +433,11 @@ body.task-active .fab {
 }
 
 body.todo-active .main,
-body.pages-active .main,
 body.task-active .main { padding-top: 54px; padding-bottom: 96px; }
 
 body.task-active .main { padding-left: 12px; padding-right: 12px; max-width: 100%; }
 
-/* Watermarks hidden in pages / task mode too */
-body.pages-active .watermark-day,
-body.pages-active .watermark-month,
+/* Watermarks hidden in task mode too */
 body.task-active .watermark-day,
 body.task-active .watermark-month {
   display: none;
@@ -2036,240 +2036,12 @@ body.todo-active .todo-list {
   .cal-today-btn { padding: 5px 0; }
 }
 
-/* ── Dot background shared by to-do + pages (matches post-it canvas) ── */
+/* ── Dot background shared by to-do + task (matches post-it canvas) ── */
 /* Applied to body so it covers the full viewport, not just the .main column */
 body.todo-active,
-body.pages-active,
 body.task-active {
   background-image: radial-gradient(circle, rgba(255,255,255,0.14) 1.5px, transparent 1.5px);
   background-size: 26px 26px;
-}
-
-/* ── Pages view (multi-page rich-text editor) ── */
-#pagesView {
-  align-items: center;
-}
-
-.pages-list {
-  width: 100%;
-  max-width: 720px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 32px;
-  padding: 12px 0 24px;
-}
-
-.page {
-  position: relative;
-  /* Height-first: explicit height → aspect-ratio computes width, not the reverse.
-     Width-first leaves height "preferred" so contenteditable can push it open.
-     clamp ensures a minimum of 860px even on short viewports (view scrolls). */
-  height: clamp(860px, calc(100vh - 40px), 1050px);
-  aspect-ratio: 1 / 1.414;             /* A4 portrait → width ≈ height / 1.414 */
-  max-width: calc(100% - 24px);
-  background: #fffaf2;
-  color: var(--text-dark);
-  border-radius: 22px;
-  box-shadow: 0 10px 36px rgba(0,0,0,0.3), 0 1px 4px rgba(0,0,0,0.18);
-  overflow: hidden;                     /* hard clip — char-limit prevents overflow */
-  transition: box-shadow 0.18s ease;
-}
-.page:focus-within {
-  box-shadow: 0 14px 44px rgba(0,0,0,0.38), 0 0 0 2px rgba(255,255,255,0.45);
-}
-
-.page-editor {
-  width: 100%;
-  height: 100%;
-  padding: 60px 64px 72px;
-  font-family: 'Poppins', 'Segoe UI', sans-serif;
-  font-size: 1.18rem;
-  line-height: 1.7;
-  color: var(--text-dark);
-  outline: none;
-  overflow: hidden;                     /* no internal scroll */
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  user-select: text;
-  -webkit-user-select: text;
-}
-.page-editor.is-empty::before {
-  content: attr(data-placeholder);
-  color: rgba(0,0,0,0.3);
-  font-style: italic;
-  pointer-events: none;
-}
-.page-editor ul,
-.page-editor ol {
-  padding-left: 1.6em;
-  margin: 0.3em 0;
-}
-.page-editor li {
-  margin: 0.15em 0;
-}
-
-.page-meta {
-  position: absolute;
-  bottom: 18px;
-  left: 24px;
-  right: 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.72rem;
-  color: rgba(0,0,0,0.4);
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  pointer-events: none;
-  user-select: none;
-}
-.page-count--full {
-  color: #d84315;
-  font-weight: 600;
-}
-
-.page-del {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(0,0,0,0.06);
-  color: rgba(0,0,0,0.5);
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-}
-.page:hover .page-del,
-.page:focus-within .page-del {
-  opacity: 1;
-}
-.page-del:hover {
-  background: rgba(211, 47, 47, 0.14);
-  color: #c62828;
-}
-.page-del svg { width: 16px; height: 16px; }
-
-/* ── Page formatting toolbar (left rail) ── */
-.page-toolbar {
-  position: fixed;
-  left: var(--right-col);
-  top: 50%;
-  transform: translateY(-50%);
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  background: rgba(255,255,255,0.12);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255,255,255,0.22);
-  border-radius: 22px;
-  padding: 10px 8px;
-  z-index: 100;
-  user-select: none;
-}
-body.pages-active .page-toolbar { display: flex; }
-
-.ptb-btn {
-  width: 34px;
-  height: 34px;
-  background: rgba(255,255,255,0.16);
-  border: 1px solid rgba(255,255,255,0.28);
-  border-radius: 50%;
-  color: var(--white);
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.1s, transform 0.08s;
-  font-family: inherit;
-  line-height: 1;
-  padding: 0;
-}
-.ptb-btn:hover  { background: rgba(255,255,255,0.3); }
-.ptb-btn:active { transform: scale(0.93); }
-.ptb-btn--active {
-  background: rgba(255,255,255,0.48);
-  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.75);
-}
-.ptb-btn--active:hover { background: rgba(255,255,255,0.55); }
-.ptb-btn svg { width: 16px; height: 16px; display: block; }
-.ptb-btn b, .ptb-btn i, .ptb-btn s { font-style: inherit; }
-.ptb-btn i { font-style: italic; }
-.ptb-btn s { text-decoration: line-through; }
-
-.ptb-sep {
-  width: 22px;
-  height: 1px;
-  background: rgba(255,255,255,0.22);
-  margin: 2px 0;
-  flex-shrink: 0;
-}
-
-.ptb-color-wrap { position: relative; display: flex; }
-
-.ptb-color-swatch {
-  display: block;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #212121;
-  border: 1.5px solid rgba(255,255,255,0.7);
-  box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
-}
-
-.ptb-color-pop {
-  position: absolute;
-  left: calc(100% + 10px);
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  width: 132px;
-  background: rgba(255,255,255,0.14);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255,255,255,0.22);
-  border-radius: 16px;
-  padding: 10px;
-  z-index: 110;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-}
-.ptb-color-pop.hidden { display: none; }
-
-.ptb-color-dot {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 2px solid rgba(255,255,255,0.85);
-  box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
-  cursor: pointer;
-  padding: 0;
-  transition: transform 0.1s;
-}
-.ptb-color-dot:hover { transform: scale(1.15); }
-
-.ptb-font-btn { font-size: 0.72rem; font-weight: 700; letter-spacing: -0.03em; }
-
-@media (max-width: 600px) {
-  .pages-list { gap: 22px; padding: 8px 0 20px; }
-  .page { height: min(calc(100vh - 80px), 680px); border-radius: 18px; }
-  .page-editor { padding: 36px 32px 56px; font-size: 1.05rem; }
-  .page-meta { bottom: 12px; left: 18px; right: 18px; font-size: 0.66rem; }
-  .page-toolbar { left: 8px; padding: 8px 6px; }
-  .ptb-btn { width: 30px; height: 30px; }
 }
 
 /* ═══════════════════════════════════════════════════════

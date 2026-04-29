@@ -3,10 +3,9 @@
 const TILES_KEY = 'tiles_order';
 
 const TILE_DEFS = {
-  todo:   { label: 'Todo',    sub: () => _todoSubtitle(),    icon: 'tileCheck',  accent: 3, view: 'todo'  },
-  postit: { label: 'Post-it', sub: () => _postitSubtitle(),  icon: 'tilePostit', accent: 5, view: 'notes' },
-  notes:  { label: 'Note',    sub: () => _notesSubtitle(),   icon: 'tileNotes',  accent: 1, view: 'pages' },
-  kanban: { label: 'Task',    sub: () => _kanbanSubtitle(),  icon: 'tileKanban', accent: 2, view: 'task'  },
+  todo:   { label: 'Todo',    sub: () => _todoSubtitle(),   icon: 'tileCheck',  accent: 3, view: 'todo'  },
+  postit: { label: 'Post-it', sub: () => _postitSubtitle(), icon: 'tilePostit', accent: 5, view: 'notes' },
+  kanban: { label: 'Task',    sub: () => _kanbanSubtitle(), icon: 'tileKanban', accent: 2, view: 'task'  },
 };
 
 function _todoSubtitle() {
@@ -27,16 +26,6 @@ function _postitSubtitle() {
       ? `${notes.length} post-it · ${withText} con testo`
       : `${notes.length} post-it`;
   } catch (_) { return 'Nessun post-it'; }
-}
-
-function _notesSubtitle() {
-  const pages = loadPages(state.currentDate);
-  const filled = pages.filter(p => (p.content || '').trim()).length;
-  if (!pages.length || (pages.length === 1 && !filled)) return 'Nessuna nota';
-  const word = pages.length === 1 ? 'pagina' : 'pagine';
-  return filled === pages.length
-    ? `${pages.length} ${word}`
-    : `${pages.length} ${word} · ${filled} con testo`;
 }
 
 function _loadTileOrder() {

@@ -33,20 +33,18 @@ function navigateTo(view) {
   document.getElementById(`${view}View`).classList.add('view--active');
 
   const onDash  = view === 'dashboard';
-  const showFab = view === 'todo' || view === 'notes' || view === 'pages' || view === 'task';
+  const showFab = view === 'todo' || view === 'notes' || view === 'task';
   document.getElementById('prevDay').classList.toggle('hidden', !onDash);
   document.getElementById('nextDay').classList.toggle('hidden', !onDash);
   document.getElementById('backFab').classList.toggle('hidden', onDash);
   document.getElementById('addTodo').classList.toggle('hidden', !showFab);
   document.body.classList.toggle('notes-active', view === 'notes');
   document.body.classList.toggle('todo-active',  view === 'todo');
-  document.body.classList.toggle('pages-active', view === 'pages');
   document.body.classList.toggle('task-active',  view === 'task');
 
   if (view === 'dashboard') renderDashboard();
   if (view === 'todo')      renderTodos();
   if (view === 'notes')     renderNotes();
-  if (view === 'pages')     renderPages();
   if (view === 'task')      renderKanban();
 }
 
@@ -56,7 +54,6 @@ function renderAll() {
   if (v === 'dashboard') renderDashboard();
   if (v === 'todo')      renderTodos();
   if (v === 'notes')     renderNotes();
-  if (v === 'pages')     renderPages();
   if (v === 'task')      renderKanban();
 }
 
@@ -87,7 +84,6 @@ document.getElementById('addTodo').addEventListener('click', () => {
   const v = _activeViewId();
   if (v === 'todo')  addTodo();
   if (v === 'notes') addNote();
-  if (v === 'pages') addPage();
   if (v === 'task')  addKanbanColumn();
 });
 
@@ -128,7 +124,7 @@ document.addEventListener('touchstart', e => {
 }, { passive: true });
 
 document.addEventListener('touchend', e => {
-  if (['notes', 'todo', 'pages', 'task'].includes(_activeViewId())) return;
+  if (['notes', 'todo', 'task'].includes(_activeViewId())) return;
   if (_swipeOnTile) return;
   const dx = e.changedTouches[0].clientX - _swipeX;
   const dy = e.changedTouches[0].clientY - _swipeY;
@@ -143,7 +139,7 @@ let _wheelCooling = false;
 let _wheelCoolPrev = 0; // last deltaX seen during cooling (to detect re-acceleration)
 
 document.addEventListener('wheel', e => {
-  if (['notes', 'todo', 'pages', 'task'].includes(_activeViewId())) return;
+  if (['notes', 'todo', 'task'].includes(_activeViewId())) return;
   if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) * 0.8) return;
   e.preventDefault();
   if (_dayChangeBusy) return;
@@ -207,6 +203,19 @@ document.addEventListener('keydown', e => {
 
 // ── Responsive header on resize ────────────────────────
 window.addEventListener('resize', renderHeader);
+
+// ── Clock (dashboard only) ─────────────────────────────
+const $clock = document.getElementById('currentTime');
+
+function _updateClock() {
+  const now = new Date();
+  const hh  = String(now.getHours()).padStart(2, '0');
+  const mm  = String(now.getMinutes()).padStart(2, '0');
+  $clock.textContent = `${hh}:${mm}`;
+}
+
+_updateClock();
+setInterval(_updateClock, 10000);
 
 // ── Boot ───────────────────────────────────────────────
 renderHeader();
