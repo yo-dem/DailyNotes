@@ -2299,7 +2299,7 @@ body.task-active {
   box-shadow: 0 5px 18px rgba(0,0,0,0.2);
 }
 .kcard.dragging   { opacity: 0.35; transform: rotate(1.5deg); }
-.kcard--ghost     { opacity: 0.25; }
+.kcard--ghost     { opacity: 0; }
 
 .kcard-del {
   position: absolute;

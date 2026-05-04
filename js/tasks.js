@@ -213,10 +213,9 @@ function _buildKanbanCard(task) {
     </div>`;
 
   const cl = task.checklist || [];
-  const clDone = cl.filter(i => i.done).length;
   const clHtml = cl.length ? `
     <div class="kcard-checklist">
-      <div class="kcard-cl-bar"><div class="kcard-cl-fill" style="width:${Math.round(clDone / cl.length * 100)}%"></div></div>
+      <div class="kcard-cl-bar"><div class="kcard-cl-fill"></div></div>
       ${cl.map(item => `
         <div class="kcard-cl-row${item.done ? ' done' : ''}" data-item-id="${item.id}">
           <span class="kcard-cl-box"></span>
@@ -328,12 +327,22 @@ function _onCardPointerMove(e) {
   const prevTargetColId = _cardDrag.targetColId;
 
   // Nearest insertion index in target column
-  let nearestIdx = targetCD.cardEls.length;
-  let minDist    = Infinity;
-  targetCD.slotRects.forEach((r, i) => {
-    const d = Math.abs(cy - (r.top + r.height / 2));
-    if (d < minDist) { minDist = d; nearestIdx = i; }
-  });
+  let nearestIdx;
+  if (targetColId === srcColId) {
+    // Within-column: snap to nearest card center
+    nearestIdx = targetCD.cardEls.length;
+    let minDist = Infinity;
+    targetCD.slotRects.forEach((r, i) => {
+      const d = Math.abs(cy - (r.top + r.height / 2));
+      if (d < minDist) { minDist = d; nearestIdx = i; }
+    });
+  } else {
+    // Cross-column: insert before the first card whose center is below the cursor
+    nearestIdx = targetCD.cardEls.length;
+    for (let i = 0; i < targetCD.slotRects.length; i++) {
+      if (cy < targetCD.slotRects[i].top + targetCD.slotRects[i].height / 2) { nearestIdx = i; break; }
+    }
+  }
 
   if (targetColId === _cardDrag.targetColId && nearestIdx === _cardDrag.nearestIdx) return;
 
