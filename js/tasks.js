@@ -331,8 +331,6 @@ function _onCardPointerMove(e) {
   let nearestIdx = targetCD.cardEls.length;
   let minDist    = Infinity;
   targetCD.slotRects.forEach((r, i) => {
-    // Skip the ghost card's own slot when same column
-    if (targetColId === srcColId && i === srcIdx) return;
     const d = Math.abs(cy - (r.top + r.height / 2));
     if (d < minDist) { minDist = d; nearestIdx = i; }
   });
