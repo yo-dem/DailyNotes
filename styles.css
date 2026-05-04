@@ -2506,7 +2506,7 @@ body.task-active {
 
 
 .tm-title {
-  background: rgba(0,0,0,0.06);
+  background: #fff;
   border: 1px solid rgba(0,0,0,0.15);
   border-radius: 12px;
   color: #1a1a2e;
@@ -2522,7 +2522,7 @@ body.task-active {
 .tm-title:focus { outline: none; border-color: rgba(0,0,0,0.35); }
 
 .tm-tags-wrap {
-  background: rgba(0,0,0,0.05);
+  background: #fff;
   border: 1px solid rgba(0,0,0,0.13);
   border-radius: 12px;
   padding: 8px 10px;
@@ -2648,7 +2648,7 @@ body.task-active {
 .tm-tag-input::placeholder { color: rgba(0,0,0,0.32); }
 
 .tm-body {
-  background: rgba(0,0,0,0.06);
+  background: #fff;
   border: 1px solid rgba(0,0,0,0.13);
   border-radius: 12px;
   color: #1a1a2e;
@@ -2665,7 +2665,7 @@ body.task-active {
 .tm-body:focus { outline: none; border-color: rgba(0,0,0,0.35); }
 
 .tm-checklist-wrap {
-  background: rgba(0,0,0,0.05);
+  background: #fff;
   border: 1px solid rgba(0,0,0,0.13);
   border-radius: 12px;
   padding: 8px 10px;
@@ -2793,7 +2793,7 @@ body.task-active {
 
 /* ── Modal: assignees ── */
 .tm-assignees-wrap {
-  background: rgba(0,0,0,0.05);
+  background: #fff;
   border: 1px solid rgba(0,0,0,0.13);
   border-radius: 12px;
   padding: 8px 10px;
