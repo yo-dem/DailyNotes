@@ -377,9 +377,11 @@ function _onCardPointerMove(e) {
       c.style.transform  = `translateY(${tr.top - cr.top}px)`;
     });
   } else {
-    // Cross-column: restore source, open gap in target
-    srcColData.cardEls.forEach(c => {
-      if (c !== card) { c.style.transition = 'transform 0.18s ease'; c.style.transform = ''; }
+    // Cross-column: close gap in source, open gap in target
+    srcColData.cardEls.forEach((c, i) => {
+      if (c === card) return;
+      c.style.transition = 'transform 0.18s ease';
+      c.style.transform  = i > srcIdx ? `translateY(-${sr.height + 8}px)` : '';
     });
     const shiftAmount = sr.height + 8;
     targetCD.cardEls.forEach((c, i) => {
