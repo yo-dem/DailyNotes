@@ -1458,7 +1458,6 @@ body.todo-active .todo-list {
   justify-content: space-between;
   top: 0;
   z-index: 1;
-  -webkit-backdrop-filter: blur(36px);
   margin-left: -20px;
   margin-right: -20px;
   padding-left: 20px;
