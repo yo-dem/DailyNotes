@@ -3,7 +3,9 @@
 const NOTES_STORE = 'dnotes_';
 const CONN_STORE  = 'dconn_';
 const VIEW_STORE  = 'dview_';
+const SNAP_STORE  = 'dnotes_snap';
 const DOT_SIZE    = 26;
+const SNAP_SIZE   = 20;
 const ZOOM_MIN    = 0.25;
 const ZOOM_MAX    = 3;
 const ZOOM_STEP   = 0.15;
@@ -21,6 +23,7 @@ let _pointers      = new Map();
 let _prevPinchDist = 0;
 let _panInited     = false;
 let _navIndex      = -1;
+let _snapToGrid    = localStorage.getItem(SNAP_STORE) === '1';
 
 // ── Storage ────────────────────────────────────────────
 function _loadNotes() {
@@ -56,6 +59,9 @@ function _schedPersistView() {
   }, 400);
 }
 
+// ── Snap to grid ───────────────────────────────────────
+function _snap(v) { return _snapToGrid ? Math.round(v / SNAP_SIZE) * SNAP_SIZE : v; }
+
 // ── Public ─────────────────────────────────────────────
 function renderNotes() {
   _loadNotes();
@@ -68,6 +74,7 @@ function renderNotes() {
   _notes.forEach(n => _buildNoteCard(n, $canvas));
   _redrawConnections();
   if (!_panInited) { _initInteraction(); _panInited = true; }
+  document.getElementById('nzbSnap')?.classList.toggle('nzb-btn--active', _snapToGrid);
 
   const saved = _loadView();
   if (saved) {
@@ -250,6 +257,12 @@ function _initInteraction() {
   document.getElementById('nzbGrid') ?.addEventListener('click', e => { e.stopPropagation(); _arrangeGrid(); });
   document.getElementById('nzbHoriz')?.addEventListener('click', e => { e.stopPropagation(); _arrangeHorizontal(); });
   document.getElementById('nzbVert') ?.addEventListener('click', e => { e.stopPropagation(); _arrangeVertical(); });
+  document.getElementById('nzbSnap') ?.addEventListener('click', e => {
+    e.stopPropagation();
+    _snapToGrid = !_snapToGrid;
+    localStorage.setItem(SNAP_STORE, _snapToGrid ? '1' : '0');
+    document.getElementById('nzbSnap').classList.toggle('nzb-btn--active', _snapToGrid);
+  });
   document.getElementById('nzbPrev') ?.addEventListener('click', e => { e.stopPropagation(); _navigatePrev(); });
   document.getElementById('nzbNext') ?.addEventListener('click', e => { e.stopPropagation(); _navigateNext(); });
 
@@ -431,8 +444,8 @@ function _startMove(e, el, note) {
       moved = true;
       el.classList.add('note-card--drag');
     }
-    note.x = nx + (ev.clientX - sx) / _zoom;
-    note.y = ny + (ev.clientY - sy) / _zoom;
+    note.x = _snap(nx + (ev.clientX - sx) / _zoom);
+    note.y = _snap(ny + (ev.clientY - sy) / _zoom);
     el.style.left = `${note.x}px`;
     el.style.top  = `${note.y}px`;
     _redrawConnections();
@@ -461,8 +474,8 @@ function _startResize(e, el, note) {
 
   const onMove = ev => {
     if (ev.pointerId !== pid) return;
-    note.w = Math.max(160, sw + (ev.clientX - sx) / _zoom);
-    note.h = Math.max(130, sh + (ev.clientY - sy) / _zoom);
+    note.w = Math.max(160, _snap(sw + (ev.clientX - sx) / _zoom));
+    note.h = Math.max(130, _snap(sh + (ev.clientY - sy) / _zoom));
     el.style.width  = `${note.w}px`;
     el.style.height = `${note.h}px`;
     _redrawConnections();
