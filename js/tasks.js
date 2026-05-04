@@ -858,7 +858,8 @@ function _renderAssigneeRepo() {
   loadAssignees().filter(a => !_editingAssignees.includes(a.name)).forEach(asgn => {
     const chip = document.createElement('span');
     chip.className = 'tm-asgn-repo-chip';
-    chip.style.setProperty('--asgn-color', asgn.color);
+    chip.style.borderColor = asgn.color;
+    chip.style.color       = asgn.color;
 
     const swatch = document.createElement('span');
     swatch.className        = 'tm-asgn-repo-swatch';

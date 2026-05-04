@@ -2876,8 +2876,8 @@ body.task-active {
   border-radius: 10px;
   font-size: 0.7rem;
   font-weight: 600;
-  border: 1.5px solid var(--asgn-color, rgba(0,0,0,0.25));
-  color: var(--asgn-color, rgba(0,0,0,0.55));
+  border: 1.5px solid rgba(0,0,0,0.25);
+  color: rgba(0,0,0,0.55);
   background: transparent;
   opacity: 0.7;
   transition: opacity 0.12s;
