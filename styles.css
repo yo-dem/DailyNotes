@@ -587,6 +587,28 @@ body.todo-active .todo-list {
   transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ── Todo tool bar ── */
+.todo-tool-bar {
+  position: fixed;
+  right: var(--right-col);
+  top: 50%;
+  transform: translateY(-50%);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.12);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 22px;
+  padding: 10px 8px;
+  z-index: 100;
+  user-select: none;
+  pointer-events: all;
+}
+#todoView.view--active .todo-tool-bar { display: flex; }
+
 /* ── Zoom bar (left) ── */
 .notes-zoom-bar,
 .notes-right-bar {

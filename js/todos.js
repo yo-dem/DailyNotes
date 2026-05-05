@@ -437,3 +437,37 @@ function _onTodoCardBodyDrag(e) {
   document.addEventListener('pointerup',     onUp);
   document.addEventListener('pointercancel', onUp);
 }
+
+// ── Todo toolbar actions ───────────────────────────────
+
+document.getElementById('tdClearReminders').addEventListener('click', () => {
+  const todos = getTodos();
+  const count = todos.filter(t => t.time).length;
+  if (!count) return;
+  showConfirm({
+    title: 'Elimina tutte le sveglie',
+    message: `Rimuovere le sveglie da ${count} ${count === 1 ? 'todo' : 'todo'}?`,
+    confirmLabel: 'Elimina',
+    danger: true,
+    onConfirm() {
+      const updated = getTodos().map(t => ({ ...t, time: '' }));
+      setTodos(updated);
+      renderTodos();
+    }
+  });
+});
+
+document.getElementById('tdClearAll').addEventListener('click', () => {
+  const todos = getTodos();
+  if (!todos.length) return;
+  showConfirm({
+    title: 'Elimina tutti i todo',
+    message: `Eliminare tutti i ${todos.length} todo di oggi?`,
+    confirmLabel: 'Elimina',
+    danger: true,
+    onConfirm() {
+      setTodos([]);
+      renderTodos();
+    }
+  });
+});
