@@ -587,10 +587,10 @@ body.todo-active .todo-list {
   transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ── Zoom bar ── */
-.notes-zoom-bar {
+/* ── Zoom bar (left) ── */
+.notes-zoom-bar,
+.notes-right-bar {
   position: fixed;
-  left: var(--right-col);
   top: 50%;
   transform: translateY(-50%);
   display: flex;
@@ -607,6 +607,8 @@ body.todo-active .todo-list {
   user-select: none;
   pointer-events: all;
 }
+.notes-zoom-bar { left: var(--right-col); }
+.notes-right-bar { right: var(--right-col); }
 
 .nzb-btn {
   width: 34px;

@@ -177,6 +177,7 @@ function _initInteraction() {
     // Don't steal touch from cards, zoom bar, or connector handles/paths
     if (e.target.closest('.note-card')
         || e.target.closest('.notes-zoom-bar')
+        || e.target.closest('.notes-right-bar')
         || e.target.closest('.conn-hit')
         || e.target.closest('.conn-cp')) return;
     // Blur any active note field so it exits edit mode before the pan gesture
