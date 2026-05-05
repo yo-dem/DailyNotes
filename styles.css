@@ -1499,7 +1499,47 @@ body.todo-active .todo-list {
   font-weight: 700;
   color: #141428;
   letter-spacing: 0.01em;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
+
+.cal-year-btn {
+  background: rgba(0,0,0,0.07);
+  border: none;
+  cursor: pointer;
+  color: #141428;
+  font: inherit;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 1px 8px 2px;
+  transition: background 0.12s;
+  line-height: inherit;
+}
+.cal-year-btn:hover { background: rgba(0,0,0,0.15); }
+
+.cal-year-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 6px 0 10px;
+}
+
+.cal-year-item {
+  border: none;
+  border-radius: 12px;
+  padding: 13px 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #1a1a1a;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.1s, color 0.1s;
+}
+.cal-year-item:hover { background: rgba(0,0,0,0.1); }
+.cal-year-item.today { color: #1565C0; font-weight: 700; }
+.cal-year-item.selected { background: #1565C0; color: #fff; font-weight: 700; }
 
 .cal-nav {
   background: rgba(0,0,0,0.07);

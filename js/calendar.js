@@ -8,6 +8,7 @@ class CalendarPicker {
     this._selected  = null;
     this._overlay   = null;
     this._el        = null;
+    this._yearMode  = false;
     this._build();
   }
 
@@ -29,6 +30,7 @@ class CalendarPicker {
     this._selected  = new Date(date);
     this._viewYear  = date.getFullYear();
     this._viewMonth = date.getMonth();
+    this._yearMode  = false;
     this._render();
     this._overlay.classList.add('open');
     this._el.classList.add('open');
@@ -40,6 +42,8 @@ class CalendarPicker {
   }
 
   _render() {
+    if (this._yearMode) { this._renderYears(); return; }
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -88,7 +92,7 @@ class CalendarPicker {
     this._el.innerHTML = `
       <div class="cal-header">
         <button class="cal-nav" data-dir="-1">&#8249;</button>
-        <span class="cal-month-year">${MONTHS_IT[m]} ${y}</span>
+        <span class="cal-month-year">${MONTHS_IT[m]} <button class="cal-year-btn" title="Seleziona anno">${y}</button></span>
         <button class="cal-nav" data-dir="1">&#8250;</button>
       </div>
       <div class="cal-grid">
@@ -108,12 +112,65 @@ class CalendarPicker {
       });
     });
 
+    this._el.querySelector('.cal-year-btn').addEventListener('click', () => {
+      this._yearMode = true;
+      this._render();
+    });
+
     this._el.querySelectorAll('.cal-day[data-date]').forEach(span => {
       span.addEventListener('click', () => {
         const [sy, sm, sd] = span.dataset.date.split('-').map(Number);
         const picked = new Date(sy, sm - 1, sd);
         if (this._onSelect) this._onSelect(picked);
         this.close();
+      });
+    });
+
+    this._el.querySelector('.cal-today-btn').addEventListener('click', () => {
+      const t = new Date();
+      t.setHours(0, 0, 0, 0);
+      if (this._onSelect) this._onSelect(t);
+      this.close();
+    });
+  }
+
+  _renderYears() {
+    const todayYear = new Date().getFullYear();
+    const base = this._viewYear - 7;
+    const years = Array.from({ length: 16 }, (_, i) => base + i);
+
+    const yearItems = years.map(y => {
+      let cls = 'cal-year-item';
+      if (y === this._viewYear) cls += ' selected';
+      else if (y === todayYear) cls += ' today';
+      return `<button class="${cls}" data-year="${y}">${y}</button>`;
+    }).join('');
+
+    this._el.innerHTML = `
+      <div class="cal-header">
+        <button class="cal-nav" data-dir="-1">&#8249;</button>
+        <span class="cal-month-year">${base} – ${base + 15}</span>
+        <button class="cal-nav" data-dir="1">&#8250;</button>
+      </div>
+      <div class="cal-year-grid">
+        ${yearItems}
+      </div>
+      <div class="cal-separator"></div>
+      <button class="cal-today-btn">Oggi</button>
+    `;
+
+    this._el.querySelectorAll('.cal-nav').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this._viewYear += parseInt(btn.dataset.dir, 10) * 16;
+        this._renderYears();
+      });
+    });
+
+    this._el.querySelectorAll('.cal-year-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this._viewYear = parseInt(btn.dataset.year, 10);
+        this._yearMode = false;
+        this._render();
       });
     });
 
