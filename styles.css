@@ -631,8 +631,8 @@ body.todo-active .todo-list {
   user-select: none;
   pointer-events: all;
 }
-.notes-zoom-bar { left: var(--right-col); }
-.notes-right-bar { right: var(--right-col); }
+.notes-zoom-bar { right: var(--right-col); }
+.notes-right-bar { left: var(--right-col); }
 
 .nzb-btn {
   width: 34px;
