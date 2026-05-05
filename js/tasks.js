@@ -956,6 +956,39 @@ function _kanbanSubtitle() {
   return parts.join(' · ') || `${tasks.length} task`;
 }
 
+// ── Task toolbar actions ─────────────────────────────────
+document.getElementById('tkClearAll').addEventListener('click', () => {
+  const count = loadKanban().length;
+  if (!count) return;
+  showConfirm({
+    title: 'Elimina tutti i task',
+    message: `Eliminare definitivamente tutti i ${count} task?`,
+    confirmLabel: 'Elimina',
+    danger: true,
+    onConfirm() { _saveKanban([]); renderKanban(); }
+  });
+});
+
+document.getElementById('tkResetCols').addEventListener('click', () => {
+  const defaultIds = new Set(_DEFAULT_COLS.map(c => c.id));
+  const orphaned   = loadKanban().filter(t => !defaultIds.has(t.col)).length;
+  const msg = orphaned
+    ? `Le colonne verranno ripristinate a To Do, Doing e Done. ${orphaned} ${orphaned === 1 ? 'task verrà spostato' : 'task verranno spostati'} in "To Do".`
+    : 'Le colonne verranno ripristinate a To Do, Doing e Done.';
+  showConfirm({
+    title: 'Ripristina colonne di default',
+    message: msg,
+    confirmLabel: 'Ripristina',
+    danger: false,
+    onConfirm() {
+      _saveCols(_DEFAULT_COLS.map(c => ({ ...c })));
+      const all = loadKanban().map(t => defaultIds.has(t.col) ? t : { ...t, col: 'todo' });
+      _saveKanban(all);
+      renderKanban();
+    }
+  });
+});
+
 // ── Wire modal (once at boot) ────────────────────────────
 (function _initTaskModal() {
   const $modal    = document.getElementById('taskModal');

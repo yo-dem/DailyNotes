@@ -587,8 +587,9 @@ body.todo-active .todo-list {
   transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ── Todo tool bar ── */
-.todo-tool-bar {
+/* ── Shared tool bar style (todo + task) ── */
+.todo-tool-bar,
+.task-tool-bar {
   position: fixed;
   right: var(--right-col);
   top: 50%;
@@ -608,6 +609,7 @@ body.todo-active .todo-list {
   pointer-events: all;
 }
 #todoView.view--active .todo-tool-bar { display: flex; }
+#taskView.view--active .task-tool-bar { display: flex; }
 
 /* ── Zoom bar (left) ── */
 .notes-zoom-bar,
