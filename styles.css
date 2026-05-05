@@ -861,7 +861,7 @@ body.todo-active .todo-list {
   cursor: grab;
   transition: box-shadow 0.15s, opacity 0.15s, transform 0.1s;
   position: relative;
-  min-height: 80px;
+  height: 96px;
   overflow: hidden;
 }
 
