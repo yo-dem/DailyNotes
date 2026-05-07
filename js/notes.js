@@ -9,6 +9,8 @@ const SNAP_SIZE   = 20;
 const ZOOM_MIN    = 0.25;
 const ZOOM_MAX    = 3;
 const ZOOM_STEP   = 0.15;
+const NOTE_W      = 220;
+const NOTE_H      = 200;
 
 const LINK_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`;
 
@@ -98,7 +100,7 @@ function renderNotes() {
 function addNote(wxOpt, wyOpt) {
   const $wrap = document.getElementById('notesCanvasWrap');
   const r = $wrap.getBoundingClientRect();
-  const w = 220, h = 200;
+  const w = NOTE_W, h = NOTE_H;
   let cx, cy;
   if (wxOpt !== undefined) {
     cx = wxOpt; cy = wyOpt;
@@ -348,6 +350,7 @@ function _buildNoteCard(note, $canvas) {
       <input class="nc-title" placeholder="Titolo…" />
       <button class="nc-link" aria-label="Collega">${LINK_SVG}</button>
       <button class="nc-color" aria-label="Colore"></button>
+      <button class="nc-fit" aria-label="Adatta dimensione">${SVG.fitContent}</button>
       <button class="nc-del" aria-label="Elimina">${SVG.cross}</button>
     </div>
     <textarea class="nc-body" placeholder="Scrivi qui…"></textarea>
@@ -378,10 +381,57 @@ function _styleColorDot($btn, idx) {
 }
 
 // ── Card events ────────────────────────────────────────
+function _fitToContent(el, note) {
+  const $body  = el.querySelector('.nc-body');
+  const $title = el.querySelector('.nc-title');
+  const $ncTop = el.querySelector('.nc-top');
+
+  // Measure width of the longest body line (no wrapping)
+  const bm = document.createElement('div');
+  bm.style.cssText =
+    'position:absolute;visibility:hidden;top:-9999px;left:-9999px;' +
+    'font-family:inherit;font-size:0.8rem;line-height:1.55;' +
+    'padding:0 12px;white-space:pre;pointer-events:none;';
+  bm.textContent = $body.value;
+  document.body.appendChild(bm);
+  const bodyW = bm.scrollWidth;
+  document.body.removeChild(bm);
+
+  // Measure title width
+  const tm = document.createElement('span');
+  tm.style.cssText =
+    'position:absolute;visibility:hidden;top:-9999px;left:-9999px;' +
+    'font-family:inherit;font-size:0.88rem;font-weight:700;' +
+    'white-space:pre;padding:0 2px;pointer-events:none;';
+  tm.textContent = $title.value;
+  document.body.appendChild(tm);
+  const titleW = tm.scrollWidth;
+  document.body.removeChild(tm);
+
+  // Fixed horizontal chrome: left-pad(10) + right-pad(6) + link(26) + color(16) + fit(26) + del(26) + 4 gaps(16) + title-pad(4)
+  const TOP_CHROME = 130;
+  const newW = Math.min(600, Math.max(NOTE_W, titleW + TOP_CHROME, bodyW));
+
+  // Set card width first so scrollHeight reflects correct wrapping
+  el.style.width = `${newW}px`;
+  $body.style.height = '0px';
+  const bodyScrollH = $body.scrollHeight;
+  $body.style.height = '';
+
+  const newH = Math.max(NOTE_H, $ncTop.offsetHeight + bodyScrollH + 4);
+
+  note.w = Math.round(newW);
+  note.h = Math.round(newH);
+  _applyCardStyle(el, note);
+  _persistNotes();
+  _redrawConnections();
+}
+
 function _bindCard(el, note) {
   const $title = el.querySelector('.nc-title');
   const $body  = el.querySelector('.nc-body');
   const $color = el.querySelector('.nc-color');
+  const $fit   = el.querySelector('.nc-fit');
   const $del   = el.querySelector('.nc-del');
   const $grip  = el.querySelector('.nc-grip');
   const $link  = el.querySelector('.nc-link');
@@ -436,6 +486,10 @@ function _bindCard(el, note) {
   // Color picker
   $color.addEventListener('pointerdown', e => e.stopPropagation());
   $color.addEventListener('click',       e => { e.stopPropagation(); _openPicker(el, note, $color); });
+
+  // Fit to content
+  $fit.addEventListener('pointerdown', e => e.stopPropagation());
+  $fit.addEventListener('click',       e => { e.stopPropagation(); _fitToContent(el, note); });
 
   // Connector drag — create a link to another note
   $link.addEventListener('pointerdown', e => { e.stopPropagation(); _startConnDrag(e, note); });

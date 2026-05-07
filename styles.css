@@ -766,7 +766,8 @@ body.todo-active .todo-list {
 }
 .nc-color:hover { transform: scale(1.2); }
 
-.nc-del {
+.nc-del,
+.nc-fit {
   width: 26px;
   height: 26px;
   background: none;
@@ -781,8 +782,8 @@ body.todo-active .todo-list {
   flex-shrink: 0;
   transition: color 0.1s, background 0.1s;
 }
-.nc-del:hover { background: rgba(0,0,0,0.08); color: rgba(0,0,0,0.65); }
-.nc-del svg { width: 13px; height: 13px; }
+.nc-del:hover, .nc-fit:hover { background: rgba(0,0,0,0.08); color: rgba(0,0,0,0.65); }
+.nc-del svg, .nc-fit svg { width: 13px; height: 13px; }
 
 .nc-body {
   flex: 1;
