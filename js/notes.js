@@ -95,18 +95,23 @@ function renderNotes() {
   _applyTransform();
 }
 
-function addNote() {
+function addNote(wxOpt, wyOpt) {
   const $wrap = document.getElementById('notesCanvasWrap');
   const r = $wrap.getBoundingClientRect();
   const w = 220, h = 200;
-  const cxW = (r.width  / 2 - _panX) / _zoom;
-  const cyW = (r.height / 2 - _panY) / _zoom;
-  const step = _notes.length % 12;
-  const off  = step * 22;
+  let cx, cy;
+  if (wxOpt !== undefined) {
+    cx = wxOpt; cy = wyOpt;
+  } else {
+    const step = _notes.length % 12;
+    const off  = step * 22;
+    cx = (r.width  / 2 - _panX) / _zoom + off;
+    cy = (r.height / 2 - _panY) / _zoom + off;
+  }
   const note = {
     id: uid(), title: '', body: '',
-    x: cxW - w / 2 + off,
-    y: cyW - h / 2 + off,
+    x: cx - w / 2,
+    y: cy - h / 2,
     w, h, color: 0,
   };
   _notes.push(note);
@@ -172,6 +177,10 @@ function _initInteraction() {
   const $wrap = document.getElementById('notesCanvasWrap');
   if (!$wrap) return;
 
+  // Double-tap state (canvas background only)
+  let _lastCanvasTap    = null; // { time, x, y }
+  let _canvasTapOrigin  = null; // { x, y } of the current pointerdown start
+
   // ── Pointer: pan & pinch ──
   $wrap.addEventListener('pointerdown', e => {
     // Don't steal touch from cards, bars, or connector handles/paths
@@ -194,10 +203,12 @@ function _initInteraction() {
       _panSX = e.clientX; _panSY = e.clientY;
       _panOX = _panX;     _panOY = _panY;
       $wrap.classList.add('panning');
+      _canvasTapOrigin = { x: e.clientX, y: e.clientY };
     } else if (_pointers.size === 2) {
       _panActive = false;
       const p = _getPinchInfo();
       _prevPinchDist = p ? p.dist : 0;
+      _canvasTapOrigin = null; // multi-touch, not a tap
     }
   });
 
@@ -226,6 +237,26 @@ function _initInteraction() {
     if (_pointers.size === 0) {
       _panActive = false;
       $wrap.classList.remove('panning');
+
+      // Double-tap detection: single-finger, barely moved → potential tap
+      if (_canvasTapOrigin) {
+        const moved = Math.hypot(e.clientX - _canvasTapOrigin.x, e.clientY - _canvasTapOrigin.y);
+        if (moved < 12) {
+          const now = Date.now();
+          if (_lastCanvasTap
+              && now - _lastCanvasTap.time < 380
+              && Math.hypot(e.clientX - _lastCanvasTap.x, e.clientY - _lastCanvasTap.y) < 50) {
+            const r = $wrap.getBoundingClientRect();
+            addNote((e.clientX - r.left - _panX) / _zoom, (e.clientY - r.top - _panY) / _zoom);
+            _lastCanvasTap = null;
+          } else {
+            _lastCanvasTap = { time: now, x: e.clientX, y: e.clientY };
+          }
+        } else {
+          _lastCanvasTap = null;
+        }
+        _canvasTapOrigin = null;
+      }
     } else if (_pointers.size === 1) {
       // One finger remains — resume pan from current position
       const rem = _pointers.values().next().value;
