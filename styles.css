@@ -611,14 +611,13 @@ body.todo-active .todo-list {
 #todoView.view--active .todo-tool-bar { display: flex; }
 #taskView.view--active .task-tool-bar { display: flex; }
 
-/* ── Zoom bar (left) ── */
+/* ── Shared glass-pill style for all notes bars ── */
 .notes-zoom-bar,
-.notes-right-bar {
+.notes-right-bar,
+.notes-top-bar,
+.notes-nav-bar {
   position: fixed;
-  top: 50%;
-  transform: translateY(-50%);
   display: flex;
-  flex-direction: column;
   align-items: center;
   gap: 6px;
   background: rgba(255,255,255,0.12);
@@ -626,13 +625,32 @@ body.todo-active .todo-list {
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255,255,255,0.22);
   border-radius: 22px;
-  padding: 10px 8px;
   z-index: 100;
   user-select: none;
   pointer-events: all;
 }
+
+/* vertical side bars */
+.notes-zoom-bar,
+.notes-right-bar {
+  top: 50%;
+  transform: translateY(-50%);
+  flex-direction: column;
+  padding: 10px 8px;
+}
 .notes-zoom-bar { right: var(--right-col); }
 .notes-right-bar { left: var(--right-col); }
+
+/* horizontal top/bottom bars */
+.notes-top-bar,
+.notes-nav-bar {
+  left: 50%;
+  transform: translateX(-50%);
+  flex-direction: row;
+  padding: 8px 10px;
+}
+.notes-top-bar { top: 56px; }
+.notes-nav-bar { bottom: 20px; }
 
 .nzb-btn {
   width: 34px;
