@@ -1727,6 +1727,7 @@ body.notes-active .notes-nav-bar { bottom: 56px; }
   transition: background 0.1s, color 0.1s;
   font-variant-numeric: tabular-nums;
   font-weight: 400;
+  position: relative;
 }
 
 .cal-day:hover { background: rgba(0,0,0,0.1); }
@@ -1748,6 +1749,29 @@ body.notes-active .notes-nav-bar { bottom: 56px; }
 .cal-day.selected:hover { background: #1565C0; }
 
 .cal-day.today.selected { border-color: transparent; }
+
+/* Dot indicators for days with content */
+.cal-day.has-todo::before,
+.cal-day.has-note::after {
+  content: '';
+  position: absolute;
+  bottom: 7px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+}
+.cal-day.has-todo::before {
+  background: #1976D2;
+  left: calc(50% - 2px);
+}
+.cal-day.has-note::after {
+  background: #F59E0B;
+  left: calc(50% - 2px);
+}
+.cal-day.has-todo.has-note::before { left: calc(50% - 5px); }
+.cal-day.has-todo.has-note::after  { left: calc(50% + 1px); }
+.cal-day.selected.has-todo::before,
+.cal-day.selected.has-note::after  { background: rgba(255,255,255,0.85); }
 
 .cal-separator {
   height: 1px;

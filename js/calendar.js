@@ -75,10 +75,15 @@ class CalendarPicker {
       const isSelected = this._selected && thisDate.getTime() === this._selected.getTime();
       const isWeekend  = thisDate.getDay() === 0 || thisDate.getDay() === 6;
 
+      const hasTodos = (() => { try { const r = localStorage.getItem(key); return r && JSON.parse(r).length > 0; } catch { return false; } })();
+      const hasNotes = (() => { try { const r = localStorage.getItem('dnotes_' + key); return r && JSON.parse(r).length > 0; } catch { return false; } })();
+
       let cls = 'cal-day';
       if (isWeekend) cls += ' weekend';
       if (isToday)    cls += ' today';
       if (isSelected) cls += ' selected';
+      if (hasTodos)   cls += ' has-todo';
+      if (hasNotes)   cls += ' has-note';
 
       cells += `<span class="${cls}" data-date="${key}">${d}</span>`;
     }
