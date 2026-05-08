@@ -444,7 +444,8 @@ body.task-active .today-chip {
 body.notes-active .today-chip.hidden,
 body.todo-active .today-chip.hidden,
 body.task-active .today-chip.hidden {
-  display: none;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 /* Watermarks hidden only in notes mode */
@@ -679,7 +680,7 @@ body.todo-active .todo-list {
   flex-direction: row;
   padding: 8px 10px;
 }
-.notes-top-bar { top: 66px; }
+.notes-top-bar { top: 75px; }
 body.notes-active .notes-nav-bar { bottom: 56px; }
 
 .nzb-btn {
