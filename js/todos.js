@@ -438,6 +438,48 @@ function _onTodoCardBodyDrag(e) {
   document.addEventListener('pointercancel', onUp);
 }
 
+// ── Double-tap on empty area to add ──────────────────
+
+(function () {
+  let _lastTap = null;
+
+  document.addEventListener('pointerdown', e => {
+    if (!document.body.classList.contains('todo-active')) return;
+    if (e.target.closest('.todo-card')) return;
+    if (e.target.closest('.todo-tool-bar')) return;
+    if (e.target.closest('.header')) return;
+    if (e.target.closest('.fab')) return;
+    if (e.target.closest('.modal-overlay')) return;
+    if (e.target.closest('.as-overlay')) return;
+    if (e.target.closest('.action-sheet')) return;
+
+    const origin = { x: e.clientX, y: e.clientY };
+    const pid    = e.pointerId;
+
+    function onUp(ev) {
+      if (ev.pointerId !== pid) return;
+      document.removeEventListener('pointerup',     onUp);
+      document.removeEventListener('pointercancel', onUp);
+
+      const moved = Math.hypot(ev.clientX - origin.x, ev.clientY - origin.y);
+      if (moved >= 12) { _lastTap = null; return; }
+
+      const now = Date.now();
+      if (_lastTap
+          && now - _lastTap.time < 380
+          && Math.hypot(ev.clientX - _lastTap.x, ev.clientY - _lastTap.y) < 50) {
+        addTodo();
+        _lastTap = null;
+      } else {
+        _lastTap = { time: now, x: ev.clientX, y: ev.clientY };
+      }
+    }
+
+    document.addEventListener('pointerup',     onUp);
+    document.addEventListener('pointercancel', onUp);
+  });
+}());
+
 // ── Todo toolbar actions ───────────────────────────────
 
 document.getElementById('tdClearReminders').addEventListener('click', () => {
