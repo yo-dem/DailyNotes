@@ -679,7 +679,7 @@ body.todo-active .todo-list {
   flex-direction: row;
   padding: 8px 10px;
 }
-.notes-top-bar { top: 56px; }
+.notes-top-bar { top: 66px; }
 body.notes-active .notes-nav-bar { bottom: 56px; }
 
 .nzb-btn {
@@ -1772,6 +1772,36 @@ body.notes-active .notes-nav-bar { bottom: 56px; }
 .cal-day.has-todo.has-note::after  { left: calc(50% + 1px); }
 .cal-day.selected.has-todo::before,
 .cal-day.selected.has-note::after  { background: rgba(255,255,255,0.85); }
+
+/* Day summary tooltip */
+.cal-tooltip {
+  position: fixed;
+  z-index: 10000;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.16), 0 1px 4px rgba(0,0,0,0.08);
+  padding: 9px 12px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.15s, transform 0.15s;
+}
+.cal-tooltip.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.ctt-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #1a1a1a;
+  white-space: nowrap;
+  line-height: 1.6;
+}
+.ctt-row + .ctt-row { margin-top: 2px; }
+.ctt-row svg { width: 14px; height: 14px; flex-shrink: 0; color: #555; }
+.ctt-row em { color: #aaa; font-style: normal; }
 
 .cal-separator {
   height: 1px;

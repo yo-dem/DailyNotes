@@ -2,13 +2,16 @@
 
 class CalendarPicker {
   constructor() {
-    this._onSelect = null;
-    this._viewYear  = 0;
-    this._viewMonth = 0;
-    this._selected  = null;
-    this._overlay   = null;
-    this._el        = null;
-    this._yearMode  = false;
+    this._onSelect       = null;
+    this._viewYear       = 0;
+    this._viewMonth      = 0;
+    this._selected       = null;
+    this._overlay        = null;
+    this._el             = null;
+    this._yearMode       = false;
+    this._tooltip        = null;
+    this._lpTimer        = null;  // long-press timer
+    this._lpFired        = false; // long press triggered
     this._build();
   }
 
@@ -21,8 +24,13 @@ class CalendarPicker {
     this._el.className = 'calendar-picker';
     this._el.addEventListener('click', e => e.stopPropagation());
 
+    this._tooltip = document.createElement('div');
+    this._tooltip.className = 'cal-tooltip';
+    this._tooltip.style.display = 'none';
+
     document.body.appendChild(this._overlay);
     document.body.appendChild(this._el);
+    document.body.appendChild(this._tooltip);
   }
 
   open(date, onSelect) {
@@ -39,6 +47,50 @@ class CalendarPicker {
   close() {
     this._overlay.classList.remove('open');
     this._el.classList.remove('open');
+    this._hideTooltip();
+  }
+
+  _buildSummary(key) {
+    const rows = [];
+    try {
+      const todos = JSON.parse(localStorage.getItem(key)) || [];
+      if (todos.length) {
+        const done = todos.filter(t => t.done).length;
+        rows.push(`<span class="ctt-row"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="12" height="12" rx="2"/><polyline points="5 8 7 10 11 6"/></svg>${todos.length} todo${done ? ` <em>(${done} fatti)</em>` : ''}</span>`);
+      }
+    } catch {}
+    try {
+      const notes = JSON.parse(localStorage.getItem('dnotes_' + key)) || [];
+      if (notes.length) {
+        rows.push(`<span class="ctt-row"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="10" height="12" rx="1.5"/><line x1="5" y1="6" x2="9" y2="6"/><line x1="5" y1="9" x2="9" y2="9"/><polyline points="9 2 9 6 13 6 13 14 2 14"/></svg>${notes.length} post-it</span>`);
+      }
+    } catch {}
+    return rows.join('');
+  }
+
+  _showTooltip(el, key) {
+    const html = this._buildSummary(key);
+    if (!html) return;
+    this._tooltip.innerHTML = html;
+    this._tooltip.style.display = 'block';
+
+    const rect = el.getBoundingClientRect();
+    const tw   = this._tooltip.offsetWidth;
+    const th   = this._tooltip.offsetHeight;
+
+    let top  = rect.top - th - 10;
+    let left = rect.left + rect.width / 2 - tw / 2;
+    if (top < 8) top = rect.bottom + 10;
+    left = Math.max(8, Math.min(left, window.innerWidth - tw - 8));
+
+    this._tooltip.style.top  = top + 'px';
+    this._tooltip.style.left = left + 'px';
+    this._tooltip.classList.add('visible');
+  }
+
+  _hideTooltip() {
+    this._tooltip.classList.remove('visible');
+    this._tooltip.style.display = 'none';
   }
 
   _render() {
@@ -124,10 +176,42 @@ class CalendarPicker {
 
     this._el.querySelectorAll('.cal-day[data-date]').forEach(span => {
       span.addEventListener('click', () => {
+        if (this._lpFired) { this._lpFired = false; return; }
         const [sy, sm, sd] = span.dataset.date.split('-').map(Number);
         const picked = new Date(sy, sm - 1, sd);
         if (this._onSelect) this._onSelect(picked);
         this.close();
+      });
+    });
+
+    // Hover tooltip (desktop)
+    this._el.querySelectorAll('.cal-day.has-todo, .cal-day.has-note').forEach(span => {
+      const key = span.dataset.date;
+      if (!key) return;
+
+      span.addEventListener('mouseenter', () => this._showTooltip(span, key));
+      span.addEventListener('mouseleave', () => this._hideTooltip());
+
+      // Long-press tooltip (touch)
+      span.addEventListener('touchstart', () => {
+        this._lpTimer = setTimeout(() => {
+          this._lpFired = true;
+          this._showTooltip(span, key);
+          const dismiss = () => {
+            this._hideTooltip();
+            document.removeEventListener('touchstart', dismiss, true);
+          };
+          document.addEventListener('touchstart', dismiss, { capture: true, once: true });
+        }, 500);
+      }, { passive: true });
+
+      span.addEventListener('touchmove', () => {
+        clearTimeout(this._lpTimer);
+      }, { passive: true });
+
+      span.addEventListener('touchend', e => {
+        clearTimeout(this._lpTimer);
+        if (this._lpFired) e.preventDefault(); // block synthetic click
       });
     });
 
