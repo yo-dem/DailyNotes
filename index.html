@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="it" id="htmlRoot">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -82,6 +82,9 @@
       </div>
       <div class="notes-nav-bar">
         <button class="nzb-btn" id="nzbPrev" aria-label="Precedente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <div class="nzb-vsep"></div>
+        <span class="nzb-note-title" id="nzbNoteTitle"></span>
+        <div class="nzb-vsep"></div>
         <button class="nzb-btn" id="nzbNext" aria-label="Successivo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></button>
       </div>
     </div>
@@ -135,14 +138,20 @@
       <label for="noteContent"></label>
       <textarea id="noteContent" placeholder="Scrivi qui le note..."></textarea>
       <div class="modal-actions">
-        <button id="noteSave">Salva</button>
-        <button id="noteCancel" class="btn-secondary">Annulla</button>
+        <button id="noteSave"></button>
+        <button id="noteCancel" class="btn-secondary"></button>
       </div>
     </div>
   </div>
 
+  <!-- Language footer -->
+  <div class="lang-footer">
+    <button class="lang-footer-btn" id="globalLang" aria-label="Cambia lingua">IT</button>
+  </div>
+
   <!-- Calendar and Time picker are injected by their respective JS files -->
 
+  <script src="js/i18n.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/state.js"></script>

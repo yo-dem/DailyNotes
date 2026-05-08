@@ -38,11 +38,11 @@ class AlarmModal {
     this._el.innerHTML = `
       <div class="alarm-icon">${SVG.clock}</div>
       <div class="alarm-time">${todo.time}</div>
-      <div class="alarm-title">${escHtml(todo.title || '(senza titolo)')}</div>
+      <div class="alarm-title">${escHtml(todo.title || i18n.t('todoNoTitle'))}</div>
       <div class="alarm-actions">
         <button class="alarm-btn alarm-btn--dismiss" data-action="dismiss">
           <span class="alarm-btn-icon">${SVG.cross}</span>
-          <span>Elimina</span>
+          <span>${i18n.t('alarmDismiss')}</span>
         </button>
         <button class="alarm-btn alarm-btn--snooze" data-action="snooze">
           <span class="alarm-btn-icon">${SVG.clock}</span>
@@ -50,7 +50,7 @@ class AlarmModal {
         </button>
         <button class="alarm-btn alarm-btn--goto" data-action="goto">
           <span class="alarm-btn-icon">${SVG.goto}</span>
-          <span>Vai</span>
+          <span>${i18n.t('alarmGoto')}</span>
         </button>
       </div>
     `;

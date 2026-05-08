@@ -97,10 +97,10 @@ function renderKanban() {
     const header = document.createElement('div');
     header.className = 'kanban-col-header';
     header.innerHTML = `
-      <span class="kanban-col-grip" title="Trascina sezione">⠿</span>
-      <span class="kanban-col-dot" style="background:${col.color}" title="Cambia colore"></span>
+      <span class="kanban-col-grip" title="${i18n.t('kanbanColGrip')}">⠿</span>
+      <span class="kanban-col-dot" style="background:${col.color}" title="${i18n.t('kanbanColColor')}"></span>
       <span class="kanban-col-title" contenteditable="true" spellcheck="false">${escHtml(col.label)}</span>
-      <button class="kanban-del-btn" title="Elimina sezione">×</button>
+      <button class="kanban-del-btn" title="${i18n.t('kanbanDelSection')}">×</button>
     `;
     colEl.appendChild(header);
 
@@ -111,7 +111,7 @@ function renderKanban() {
 
     const footer = document.createElement('div');
     footer.className = 'kanban-col-footer';
-    footer.innerHTML = `<button class="kanban-add-btn" title="Aggiungi task">+ Aggiungi task</button>`;
+    footer.innerHTML = `<button class="kanban-add-btn" title="${i18n.t('kanbanAddTask')}">${i18n.t('kanbanAddTask')}</button>`;
     colEl.appendChild(footer);
 
     tasks.filter(t => t.col === col.id)
@@ -166,10 +166,12 @@ function renderKanban() {
     header.querySelector('.kanban-del-btn').addEventListener('click', () => {
       const cardCount = loadKanban().filter(t => t.col === col.id).length;
       const msg = cardCount
-        ? `La sezione "${col.label}" e ${cardCount === 1 ? 'il task al suo interno' : `i ${cardCount} task al suo interno`} verranno eliminati definitivamente.`
-        : `La sezione "${col.label}" verrà eliminata definitivamente.`;
+        ? (cardCount === 1
+            ? i18n.t('confirmDeleteSectionMsg1', { name: col.label })
+            : i18n.t('confirmDeleteSectionMsgN', { name: col.label, count: cardCount }))
+        : i18n.t('confirmDeleteSectionMsgEmpty', { name: col.label });
       showConfirm({
-        title: 'Eliminare sezione?', message: msg, confirmLabel: 'Elimina', danger: true,
+        title: i18n.t('confirmDeleteSectionTitle'), message: msg, confirmLabel: i18n.t('confirmClearConnBtn'), danger: true,
         onConfirm: () => {
           _saveCols(loadCols().filter(c => c.id !== col.id));
           _saveKanban(loadKanban().filter(t => t.col !== col.id));
@@ -209,7 +211,7 @@ function _buildKanbanCard(task) {
             const c = asgnRepo.find(a => a.name === n)?.color || TASK_COLORS[3];
             return `<span class="kcard-assignee-badge" style="background:${c}">${escHtml(n)}</span>`;
           }).join('')
-        : `<span class="kcard-footer-names">Tutti</span>`}
+        : `<span class="kcard-footer-names">${i18n.t('kanbanAll')}</span>`}
     </div>`;
 
   const cl = task.checklist || [];
@@ -224,10 +226,10 @@ function _buildKanbanCard(task) {
     </div>` : '';
 
   card.innerHTML = `
-    <button class="kcard-del" title="Elimina">×</button>
+    <button class="kcard-del" title="${i18n.t('confirmClearConnBtn')}">×</button>
     <div class="kcard-stripe" style="background:${color}"></div>
     <div class="kcard-content">
-      <div class="kcard-title">${escHtml(task.title || 'Senza titolo')}</div>
+      <div class="kcard-title">${escHtml(task.title || i18n.t('kanbanTaskNoTitle'))}</div>
       ${tagsHtml ? `<div class="kcard-tags">${tagsHtml}</div>` : ''}
       ${task.body ? `<div class="kcard-desc">${escHtml(task.body)}</div>` : ''}
     </div>
@@ -238,9 +240,9 @@ function _buildKanbanCard(task) {
   card.querySelector('.kcard-del').addEventListener('click', e => {
     e.stopPropagation();
     showConfirm({
-      title: 'Eliminare task?',
-      message: `"${escHtml(task.title || 'Senza titolo')}" verrà rimosso definitivamente.`,
-      confirmLabel: 'Elimina', danger: true,
+      title: i18n.t('confirmDeleteTaskTitle'),
+      message: i18n.t('confirmDeleteTaskMsg', { title: task.title || i18n.t('kanbanTaskNoTitle') }),
+      confirmLabel: i18n.t('confirmClearConnBtn'), danger: true,
       onConfirm: () => { _saveKanban(loadKanban().filter(t => t.id !== task.id)); renderKanban(); },
     });
   });
@@ -615,7 +617,7 @@ function _onColPointerUp() {
 function addKanbanColumn() {
   const cols   = loadCols();
   const colors = ['#0288D1','#E65100','#2E7D32','#7B1FA2','#C2185B','#F57F17'];
-  cols.push({ id: uid(), label: 'Nuova sezione', color: colors[cols.length % colors.length] });
+  cols.push({ id: uid(), label: i18n.t('kanbanNewSection'), color: colors[cols.length % colors.length] });
   _saveCols(cols);
   renderKanban();
 
@@ -637,10 +639,11 @@ function addKanbanColumn() {
 
 // ── Auto-title for new tasks ─────────────────────────────
 function _nextTaskTitle() {
+  const prefix = i18n.t('taskTitlePrefix');
   const titles = new Set(loadKanban().map(t => t.title));
   let n = 1;
-  while (titles.has(`Titolo ${n}`)) n++;
-  return `Titolo ${n}`;
+  while (titles.has(`${prefix}${n}`)) n++;
+  return `${prefix}${n}`;
 }
 
 // ── Mini colour picker ───────────────────────────────────
@@ -947,7 +950,7 @@ function addKanbanTask() {
 // ── Subtitle for dashboard tile ──────────────────────────
 function _kanbanSubtitle() {
   const tasks = loadKanban();
-  if (!tasks.length) return 'Nessun task';
+  if (!tasks.length) return i18n.t('dashKanbanNone');
   const cols  = loadCols();
   const parts = cols
     .map(c => ({ label: c.label, n: tasks.filter(t => t.col === c.id).length }))
@@ -961,9 +964,9 @@ document.getElementById('tkClearAll').addEventListener('click', () => {
   const count = loadKanban().length;
   if (!count) return;
   showConfirm({
-    title: 'Elimina tutti i task',
-    message: `Eliminare definitivamente tutti i ${count} task?`,
-    confirmLabel: 'Elimina',
+    title: i18n.t('confirmDeleteTasksTitle'),
+    message: i18n.t('confirmDeleteTasksMsg', { count }),
+    confirmLabel: i18n.t('confirmClearConnBtn'),
     danger: true,
     onConfirm() { _saveKanban([]); renderKanban(); }
   });
@@ -973,12 +976,14 @@ document.getElementById('tkResetCols').addEventListener('click', () => {
   const defaultIds = new Set(_DEFAULT_COLS.map(c => c.id));
   const orphaned   = loadKanban().filter(t => !defaultIds.has(t.col)).length;
   const msg = orphaned
-    ? `Le colonne verranno ripristinate a To Do, Doing e Done. ${orphaned} ${orphaned === 1 ? 'task verrà spostato' : 'task verranno spostati'} in "To Do".`
-    : 'Le colonne verranno ripristinate a To Do, Doing e Done.';
+    ? (orphaned === 1
+        ? i18n.t('confirmResetColsMsgOrphan1', { count: orphaned })
+        : i18n.t('confirmResetColsMsgOrphanN', { count: orphaned }))
+    : i18n.t('confirmResetColsMsg');
   showConfirm({
-    title: 'Ripristina colonne di default',
+    title: i18n.t('confirmResetColsTitle'),
     message: msg,
-    confirmLabel: 'Ripristina',
+    confirmLabel: i18n.t('confirmResetColsBtn'),
     danger: false,
     onConfirm() {
       _saveCols(_DEFAULT_COLS.map(c => ({ ...c })));
@@ -1019,7 +1024,7 @@ document.getElementById('tkResetCols').addEventListener('click', () => {
     const clone  = {
       id:         uid(),
       col:        src?.col || _editingCol,
-      title:      `Copia di ${title}`,
+      title:      `${i18n.t('taskCopyPrefix')}${title}`,
       body:       body,
       tags:       [..._editingTags],
       color:      _editingColor,

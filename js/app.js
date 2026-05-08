@@ -10,17 +10,64 @@ const $todayChip  = document.getElementById('goToday');
 function renderHeader() {
   const narrow = window.innerWidth < 360;
   if (narrow) {
-    $dateLabel.innerHTML = `${formatDateShort(state.currentDate)}<span class="date-day-name">${DAYS_IT[state.currentDate.getDay()]}</span>`;
+    $dateLabel.innerHTML = `${formatDateShort(state.currentDate)}<span class="date-day-name">${i18n.t('days')[state.currentDate.getDay()]}</span>`;
   } else {
     $dateLabel.textContent = formatDate(state.currentDate);
   }
   $waterDay.textContent   = state.currentDate.getDate();
-  $waterMonth.textContent = MONTHS_IT[state.currentDate.getMonth()];
+  $waterMonth.textContent = i18n.t('months')[state.currentDate.getMonth()];
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const isToday = state.currentDate.getTime() === today.getTime();
   $todayChip.classList.toggle('hidden', isToday);
+  $todayChip.textContent = i18n.t('today');
+}
+
+function _applyLocale() {
+  document.documentElement.lang = i18n.locale;
+  const $lang = document.getElementById('globalLang');
+  if ($lang) { $lang.textContent = i18n.t('langLabel'); $lang.setAttribute('aria-label', i18n.t('switchLang')); }
+  document.getElementById('prevDay').setAttribute('aria-label', i18n.t('prevDay'));
+  document.getElementById('nextDay').setAttribute('aria-label', i18n.t('nextDay'));
+  document.getElementById('currentDate').title = i18n.t('chooseDate');
+  // Notes bars
+  document.getElementById('nzbClearConn')?.setAttribute('aria-label', i18n.t('clearConn'));
+  document.getElementById('nzbClearAll') ?.setAttribute('aria-label', i18n.t('clearAll'));
+  document.getElementById('nzbSnap')     ?.setAttribute('aria-label', i18n.t('snapGrid'));
+  document.getElementById('nzbGrid')     ?.setAttribute('aria-label', i18n.t('gridLayout'));
+  document.getElementById('nzbHoriz')    ?.setAttribute('aria-label', i18n.t('horizLayout'));
+  document.getElementById('nzbVert')     ?.setAttribute('aria-label', i18n.t('vertLayout'));
+  document.getElementById('nzbPrev')     ?.setAttribute('aria-label', i18n.t('prevNote'));
+  document.getElementById('nzbNext')     ?.setAttribute('aria-label', i18n.t('nextNote'));
+  document.getElementById('nzbMinus')    ?.setAttribute('aria-label', i18n.t('zoomOut'));
+  document.getElementById('nzbPlus')     ?.setAttribute('aria-label', i18n.t('zoomIn'));
+  // Todo + task toolbar
+  document.getElementById('tdClearReminders')?.setAttribute('aria-label', i18n.t('confirmClearRemindersTitle'));
+  document.getElementById('tdClearAll')  ?.setAttribute('aria-label', i18n.t('confirmClearTodosTitle'));
+  document.getElementById('tkResetCols') ?.setAttribute('aria-label', i18n.t('confirmResetColsTitle'));
+  document.getElementById('tkClearAll')  ?.setAttribute('aria-label', i18n.t('confirmDeleteTasksTitle'));
+  // Modal buttons
+  const noteSave = document.getElementById('noteSave');
+  if (noteSave) noteSave.textContent = i18n.t('save');
+  const noteCancel = document.getElementById('noteCancel');
+  if (noteCancel) noteCancel.textContent = i18n.t('confirmCancel');
+  // Modal placeholders
+  const noteTitle = document.getElementById('noteModalTitle');
+  if (noteTitle) noteTitle.placeholder = i18n.t('noteModalTitlePh');
+  const noteContent = document.getElementById('noteContent');
+  if (noteContent) noteContent.placeholder = i18n.t('noteContentPh');
+  const tmTitle = document.getElementById('tmTitle');
+  if (tmTitle) tmTitle.placeholder = i18n.t('taskTitleInputPh');
+  const tmBody = document.getElementById('tmBody');
+  if (tmBody) tmBody.placeholder = i18n.t('taskBodyPh');
+  const tmTagInput = document.getElementById('tmTagInput');
+  if (tmTagInput) tmTagInput.placeholder = i18n.t('taskTagInputPh');
+  const tmCheckInput = document.getElementById('tmCheckInput');
+  if (tmCheckInput) tmCheckInput.placeholder = i18n.t('taskCheckInputPh');
+  const tmAssigneeInput = document.getElementById('tmAssigneeInput');
+  if (tmAssigneeInput) tmAssigneeInput.placeholder = i18n.t('taskAssigneeInputPh');
+  renderAll();
 }
 
 function _activeViewId() {
@@ -201,6 +248,13 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowRight' && !isInputFocused() && _activeViewId() === 'dashboard') _changeDayAnimated(+1);
 });
 
+// ── Language switcher ──────────────────────────────────
+document.getElementById('globalLang')?.addEventListener('click', e => {
+  e.stopPropagation();
+  i18n.setLocale(i18n.nextLocale());
+  _applyLocale();
+});
+
 // ── Responsive header on resize ────────────────────────
 window.addEventListener('resize', renderHeader);
 
@@ -218,5 +272,5 @@ _updateClock();
 setInterval(_updateClock, 10000);
 
 // ── Boot ───────────────────────────────────────────────
-renderHeader();
+_applyLocale();
 navigateTo('dashboard');

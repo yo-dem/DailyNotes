@@ -58,7 +58,7 @@ class CalendarPicker {
     if (startOffset < 0) startOffset = 6;
 
     // Days of week headers (Mon–Sun)
-    const dowLabels = ['Lu', 'Ma', 'Me', 'Gi', 'Ve', 'Sa', 'Do']
+    const dowLabels = i18n.t('daysShortMon')
       .map(l => `<span class="cal-dow">${l}</span>`)
       .join('');
 
@@ -92,7 +92,7 @@ class CalendarPicker {
     this._el.innerHTML = `
       <div class="cal-header">
         <button class="cal-nav" data-dir="-1">&#8249;</button>
-        <span class="cal-month-year">${MONTHS_IT[m]} <button class="cal-year-btn" title="Seleziona anno">${y}</button></span>
+        <span class="cal-month-year">${i18n.t('months')[m]} <button class="cal-year-btn" title="${i18n.t('selectYear')}">${y}</button></span>
         <button class="cal-nav" data-dir="1">&#8250;</button>
       </div>
       <div class="cal-grid">
@@ -100,7 +100,7 @@ class CalendarPicker {
         ${cells}
       </div>
       <div class="cal-separator"></div>
-      <button class="cal-today-btn">Oggi</button>
+      <button class="cal-today-btn">${i18n.t('today')}</button>
     `;
 
     this._el.querySelectorAll('.cal-nav').forEach(btn => {
@@ -156,7 +156,7 @@ class CalendarPicker {
         ${yearItems}
       </div>
       <div class="cal-separator"></div>
-      <button class="cal-today-btn">Oggi</button>
+      <button class="cal-today-btn">${i18n.t('today')}</button>
     `;
 
     this._el.querySelectorAll('.cal-nav').forEach(btn => {

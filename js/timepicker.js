@@ -66,23 +66,23 @@ class TimePicker {
 
     this._el.innerHTML = `
       <div class="tp-header">
-        <span class="tp-title">Imposta orario</span>
+        <span class="tp-title">${i18n.t('tpTitle')}</span>
         <div class="tp-display">${this._displayTime()}</div>
       </div>
       <div class="tp-body">
         <div class="tp-col">
-          <div class="tp-col-label">Ore</div>
+          <div class="tp-col-label">${i18n.t('tpHours')}</div>
           <div class="tp-scroll" id="tpHours">${hoursHtml}</div>
         </div>
         <div class="tp-colon">:</div>
         <div class="tp-col">
-          <div class="tp-col-label">Min</div>
+          <div class="tp-col-label">${i18n.t('tpMins')}</div>
           <div class="tp-scroll" id="tpMins">${minsHtml}</div>
         </div>
       </div>
       <div class="tp-actions">
-        <button class="tp-clear">Rimuovi</button>
-        <button class="tp-confirm">Conferma</button>
+        <button class="tp-clear">${i18n.t('tpClear')}</button>
+        <button class="tp-confirm">${i18n.t('tpConfirm')}</button>
       </div>
     `;
 

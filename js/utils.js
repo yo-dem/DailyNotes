@@ -28,7 +28,9 @@ function escHtml(str) {
 }
 
 function formatDate(d) {
-  return `${DAYS_IT[d.getDay()]} ${d.getDate()} ${MONTHS_IT[d.getMonth()]} ${d.getFullYear()}`;
+  const days   = i18n.t('days');
+  const months = i18n.t('months');
+  return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 function formatDateShort(d) {
@@ -81,7 +83,7 @@ function showConfirm({ title = '', message = '', confirmLabel = 'Conferma', dang
       <p class="confirm-title">${escHtml(title)}</p>
       <p class="confirm-message">${escHtml(message)}</p>
       <div class="confirm-actions">
-        <button class="confirm-cancel">Annulla</button>
+        <button class="confirm-cancel">${i18n.t('confirmCancel')}</button>
         <button class="confirm-ok${danger ? ' confirm-ok--danger' : ''}">${escHtml(confirmLabel)}</button>
       </div>
     </div>

@@ -12,7 +12,7 @@ function renderTodos() {
   if (todos.length === 0) {
     const li = document.createElement('li');
     li.className = 'empty-state';
-    li.textContent = 'Nessun appunto. Premi + per aggiungere.';
+    li.textContent = i18n.t('todoEmpty');
     $list.appendChild(li);
     return;
   }
@@ -32,29 +32,29 @@ function _buildCard(todo, index) {
 
   li.innerHTML = `
     <div class="card-accent accent-${accentIdx}"></div>
-    <div class="card-drag-handle" title="Trascina per riordinare">
+    <div class="card-drag-handle" title="${i18n.t('todoDragHandle')}">
       <span></span><span></span><span></span><span></span>
     </div>
     <div class="card-body">
       <div class="card-row">
-        <button class="card-check${todo.done ? ' checked' : ''}" title="${todo.done ? 'Segna come da fare' : 'Segna come fatto'}">${todo.done ? SVG.checkFull : SVG.checkEmpty}</button>
-        <div class="card-title-wrap" data-value="Titolo...">
+        <button class="card-check${todo.done ? ' checked' : ''}" title="${todo.done ? i18n.t('todoMarkTodo') : i18n.t('todoMarkDone')}">${todo.done ? SVG.checkFull : SVG.checkEmpty}</button>
+        <div class="card-title-wrap" data-value="${i18n.t('todoTitlePh')}">
           <input class="card-title" data-accent="${accentIdx}" type="text"
-                 value="${escHtml(todo.title)}" placeholder="Titolo..." spellcheck="false" readonly />
+                 value="${escHtml(todo.title)}" placeholder="${i18n.t('todoTitlePh')}" spellcheck="false" readonly />
         </div>
       </div>
       <div class="card-preview">${escHtml(previewText(todo.content))}</div>
     </div>
     <div class="card-right">
-      <button class="reminder-btn ${todo.time ? 'has-time' : ''}" title="Imposta orario">
+      <button class="reminder-btn ${todo.time ? 'has-time' : ''}" title="${i18n.t('todoSetReminder')}">
         ${SVG.clock}
         <span class="time-label">${todo.time || '--:--'}</span>
       </button>
-      <button class="menu-btn" title="Opzioni">
+      <button class="menu-btn" title="${i18n.t('todoOptions')}">
         <span></span><span></span><span></span>
       </button>
       <div class="card-vsep"></div>
-      <button class="card-delete-btn" title="Elimina">${SVG.cross}</button>
+      <button class="card-delete-btn" title="${i18n.t('todoDelete')}">${SVG.cross}</button>
     </div>`;
 
   _bindCardEvents(li, todo);
@@ -71,7 +71,7 @@ function _bindCardEvents(li, todo) {
   const deleteBtn   = li.querySelector('.card-delete-btn');
 
   const titleWrap = li.querySelector('.card-title-wrap');
-  titleWrap.dataset.value = titleInput.value || 'Titolo...';
+  titleWrap.dataset.value = titleInput.value || i18n.t('todoTitlePh');
 
   dragHandle.addEventListener('pointerdown', _onTodoDragHandle);
   li.addEventListener('pointerdown', _onTodoCardBodyDrag);
@@ -93,9 +93,9 @@ function _bindCardEvents(li, todo) {
 
   menuBtn.addEventListener('click', e => {
     e.stopPropagation();
-    actionSheet.open(titleInput.value || '(senza titolo)', [
-      { key: 'note',   svgIcon: SVG.note,   label: 'Apri nota', handler: () => openNoteModal(todo.id) },
-      { key: 'delete', svgIcon: SVG.delete, label: 'Elimina',   danger: true, handler: () => deleteTodo(todo.id) },
+    actionSheet.open(titleInput.value || i18n.t('todoNoTitle'), [
+      { key: 'note',   svgIcon: SVG.note,   label: i18n.t('todoOpenNote'), handler: () => openNoteModal(todo.id) },
+      { key: 'delete', svgIcon: SVG.delete, label: i18n.t('todoDelete'),   danger: true, handler: () => deleteTodo(todo.id) },
     ]);
   });
 
@@ -445,9 +445,9 @@ document.getElementById('tdClearReminders').addEventListener('click', () => {
   const count = todos.filter(t => t.time).length;
   if (!count) return;
   showConfirm({
-    title: 'Elimina tutte le sveglie',
-    message: `Rimuovere le sveglie da ${count} ${count === 1 ? 'todo' : 'todo'}?`,
-    confirmLabel: 'Elimina',
+    title: i18n.t('confirmClearRemindersTitle'),
+    message: i18n.t('confirmClearRemindersMsg', { count }),
+    confirmLabel: i18n.t('confirmClearConnBtn'),
     danger: true,
     onConfirm() {
       const updated = getTodos().map(t => ({ ...t, time: '' }));
@@ -461,9 +461,9 @@ document.getElementById('tdClearAll').addEventListener('click', () => {
   const todos = getTodos();
   if (!todos.length) return;
   showConfirm({
-    title: 'Elimina tutti i todo',
-    message: `Eliminare tutti i ${todos.length} todo di oggi?`,
-    confirmLabel: 'Elimina',
+    title: i18n.t('confirmClearTodosTitle'),
+    message: i18n.t('confirmClearTodosMsg', { count: todos.length }),
+    confirmLabel: i18n.t('confirmClearConnBtn'),
     danger: true,
     onConfirm() {
       setTodos([]);

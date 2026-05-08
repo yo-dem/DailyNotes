@@ -26,6 +26,16 @@ let _prevPinchDist = 0;
 let _panInited     = false;
 let _navIndex      = -1;
 let _snapToGrid    = localStorage.getItem(SNAP_STORE) === '1';
+let _selectedNote  = null;
+
+function _setSelectedNote(note) {
+  _selectedNote = note;
+  const el = document.getElementById('nzbNoteTitle');
+  if (!el) return;
+  if (!note) { el.textContent = ''; return; }
+  const idx = _notes.findIndex(n => n.id === note.id);
+  el.textContent = note.title || i18n.t('noteDefault', { n: idx + 1 });
+}
 
 // ── Storage ────────────────────────────────────────────
 function _loadNotes() {
@@ -72,9 +82,11 @@ function renderNotes() {
   const $canvas = document.getElementById('notesCanvas');
   if (!$canvas) return;
   $canvas.innerHTML = '';
+  _selectedNote = null;
   _buildConnectorsSvg($canvas);
   _notes.forEach(n => _buildNoteCard(n, $canvas));
   _redrawConnections();
+  _setSelectedNote(_notes.length ? _notes[0] : null);
   if (!_panInited) { _initInteraction(); _panInited = true; }
   document.getElementById('nzbSnap')?.classList.toggle('nzb-btn--active', _snapToGrid);
 
@@ -119,6 +131,7 @@ function addNote(wxOpt, wyOpt) {
   _notes.push(note);
   _persistNotes();
   const el = _buildNoteCard(note, document.getElementById('notesCanvas'));
+  _setSelectedNote(note);
   el.querySelector('.nc-title').focus();
 }
 
@@ -306,9 +319,9 @@ function _initInteraction() {
     e.stopPropagation();
     if (!_connections.length) return;
     showConfirm({
-      title: 'Elimina tutte le connessioni',
-      message: 'Tutte le frecce tra i post-it verranno eliminate. Questa azione non è reversibile.',
-      confirmLabel: 'Elimina',
+      title: i18n.t('confirmClearConnTitle'),
+      message: i18n.t('confirmClearConnMsg'),
+      confirmLabel: i18n.t('confirmClearConnBtn'),
       danger: true,
       onConfirm: () => {
         _connections = [];
@@ -322,20 +335,22 @@ function _initInteraction() {
     e.stopPropagation();
     if (!_notes.length) return;
     showConfirm({
-      title: 'Elimina tutti i post-it',
-      message: `Stai per eliminare ${_notes.length} post-it e tutte le loro connessioni. Questa azione non è reversibile.`,
-      confirmLabel: 'Elimina tutto',
+      title: i18n.t('confirmClearAllTitle'),
+      message: i18n.t('confirmClearAllMsg', { count: _notes.length }),
+      confirmLabel: i18n.t('confirmClearAllBtn'),
       danger: true,
       onConfirm: () => {
         _notes = [];
         _connections = [];
         _persistNotes();
         _persistConnections();
+        _setSelectedNote(null);
         document.getElementById('notesCanvas').innerHTML = '';
         _buildConnectorsSvg(document.getElementById('notesCanvas'));
       },
     });
   });
+
 }
 
 // ── Build card ─────────────────────────────────────────
@@ -347,13 +362,13 @@ function _buildNoteCard(note, $canvas) {
 
   el.innerHTML = `
     <div class="nc-top">
-      <input class="nc-title" placeholder="Titolo…" />
-      <button class="nc-link" aria-label="Collega">${LINK_SVG}</button>
-      <button class="nc-color" aria-label="Colore"></button>
-      <button class="nc-fit" aria-label="Adatta dimensione">${SVG.fitContent}</button>
-      <button class="nc-del" aria-label="Elimina">${SVG.cross}</button>
+      <input class="nc-title" placeholder="${i18n.t('noteTitlePh')}" />
+      <button class="nc-link" aria-label="${i18n.t('connect')}">${LINK_SVG}</button>
+      <button class="nc-color" aria-label="${i18n.t('colorBtn')}"></button>
+      <button class="nc-fit" aria-label="${i18n.t('fitSize')}">${SVG.fitContent}</button>
+      <button class="nc-del" aria-label="${i18n.t('deleteNote')}">${SVG.cross}</button>
     </div>
-    <textarea class="nc-body" placeholder="Scrivi qui…"></textarea>
+    <textarea class="nc-body" placeholder="${i18n.t('noteBodyPh')}"></textarea>
     <div class="nc-grip"></div>
   `;
 
@@ -436,7 +451,11 @@ function _bindCard(el, note) {
   const $grip  = el.querySelector('.nc-grip');
   const $link  = el.querySelector('.nc-link');
 
-  $title.addEventListener('input', () => { note.title = $title.value; _persistNotes(); });
+  $title.addEventListener('input', () => {
+    note.title = $title.value;
+    _persistNotes();
+    if (_selectedNote === note) _setSelectedNote(note);
+  });
   $body.addEventListener('input',  () => { note.body  = $body.value;  _persistNotes(); });
 
   // Restore read-only on blur (exit edit mode)
@@ -449,6 +468,7 @@ function _bindCard(el, note) {
   el.addEventListener('pointerdown', e => {
     e.stopPropagation();
     _bringToFront(el);
+    _setSelectedNote(note);
 
     // Blur any other card's field that may be in edit mode
     const active = document.activeElement;
@@ -504,6 +524,7 @@ function _bindCard(el, note) {
     _persistNotes();
     _persistConnections();
     el.remove();
+    if (_selectedNote === note) _setSelectedNote(_notes.length ? _notes[0] : null);
     _redrawConnections();
   });
 
@@ -916,9 +937,9 @@ function _openConnMenu(conn, clientX, clientY) {
   const menu = document.createElement('div');
   menu.className = 'conn-menu';
   menu.innerHTML = `
-    <button data-act="toggle">${conn.mode === 'bidirectional' ? 'Rendi orientata' : 'Rendi bidirezionale'}</button>
-    <button data-act="reverse">Inverti direzione</button>
-    <button data-act="delete">Elimina connessione</button>
+    <button data-act="toggle">${conn.mode === 'bidirectional' ? i18n.t('connToggleToOri') : i18n.t('connToggleToBi')}</button>
+    <button data-act="reverse">${i18n.t('connReverse')}</button>
+    <button data-act="delete">${i18n.t('connDelete')}</button>
   `;
   menu.addEventListener('click', e => {
     const act = e.target.closest('button')?.dataset.act;
@@ -1044,6 +1065,7 @@ function _navigateTo(idx) {
   if (!_notes.length) return;
   _navIndex = ((idx % _notes.length) + _notes.length) % _notes.length;
   const note = _notes[_navIndex];
+  _setSelectedNote(note);
   const $wrap = document.getElementById('notesCanvasWrap');
   if (!$wrap) return;
   const r = $wrap.getBoundingClientRect();
@@ -1056,3 +1078,4 @@ function _navigateTo(idx) {
 
 function _navigatePrev() { _navigateTo(_navIndex <= 0 ? _notes.length - 1 : _navIndex - 1); }
 function _navigateNext() { _navigateTo(_navIndex + 1); }
+

@@ -33,7 +33,7 @@ class ActionSheet {
       <div class="as-title">${escHtml(title)}</div>
       <div class="as-actions">${actionsHtml}</div>
       <div class="as-divider as-divider--gap"></div>
-      <button class="as-cancel">Annulla</button>
+      <button class="as-cancel">${i18n.t('confirmCancel')}</button>
     `;
 
     actions.forEach(a => {

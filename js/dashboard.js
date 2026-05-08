@@ -3,29 +3,29 @@
 const TILES_KEY = 'tiles_order';
 
 const TILE_DEFS = {
-  todo:   { label: 'Todo',    sub: () => _todoSubtitle(),   icon: 'tileCheck',  accent: 3, view: 'todo'  },
-  postit: { label: 'Post-it', sub: () => _postitSubtitle(), icon: 'tilePostit', accent: 5, view: 'notes' },
-  kanban: { label: 'Task',    sub: () => _kanbanSubtitle(), icon: 'tileKanban', accent: 2, view: 'task'  },
+  todo:   { label: () => i18n.t('tileTodo'),   sub: () => _todoSubtitle(),   icon: 'tileCheck',  accent: 3, view: 'todo'  },
+  postit: { label: () => i18n.t('tilePostit'), sub: () => _postitSubtitle(), icon: 'tilePostit', accent: 5, view: 'notes' },
+  kanban: { label: () => i18n.t('tileTask'),   sub: () => _kanbanSubtitle(), icon: 'tileKanban', accent: 2, view: 'task'  },
 };
 
 function _todoSubtitle() {
   const todos = getTodos();
-  if (!todos.length) return 'Nessun appunto';
-  const done  = todos.filter(t => t.done).length;
-  const pend  = todos.length - done;
-  if (done === todos.length) return `Tutti completati · ${todos.length}`;
-  return `${pend} da fare · ${done} completati`;
+  if (!todos.length) return i18n.t('dashTodoNone');
+  const done = todos.filter(t => t.done).length;
+  const pend = todos.length - done;
+  if (done === todos.length) return i18n.t('dashTodoAllDone', { count: todos.length });
+  return i18n.t('dashTodoProgress', { pending: pend, done });
 }
 
 function _postitSubtitle() {
   try {
     const notes = JSON.parse(localStorage.getItem('dnotes_' + dateKey(state.currentDate))) || [];
-    if (!notes.length) return 'Nessun post-it';
+    if (!notes.length) return i18n.t('dashPostitNone');
     const withText = notes.filter(n => n.body && n.body.trim()).length;
     return withText
-      ? `${notes.length} post-it · ${withText} con testo`
-      : `${notes.length} post-it`;
-  } catch (_) { return 'Nessun post-it'; }
+      ? i18n.t('dashPostitCountText', { count: notes.length, withText })
+      : i18n.t('dashPostitCount', { count: notes.length });
+  } catch (_) { return i18n.t('dashPostitNone'); }
 }
 
 function _loadTileOrder() {
@@ -63,7 +63,7 @@ function renderDashboard() {
 
     tile.innerHTML = `
       <div class="dash-tile-icon">${SVG[def.icon]}</div>
-      <div class="dash-tile-label">${def.label}</div>
+      <div class="dash-tile-label">${def.label()}</div>
       <div class="dash-tile-sub">${def.sub()}</div>
     `;
 

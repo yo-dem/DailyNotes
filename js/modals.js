@@ -28,7 +28,7 @@ function _renderColorPicker(selectedIdx) {
     <button class="note-color-swatch${i === selectedIdx ? ' selected' : ''}"
             data-idx="${i}"
             style="--swatch-color: ${color}; --swatch-bg: ${PASTEL_BG[i]};"
-            title="Colore ${i + 1}">
+            title="${i18n.t('noteColorN', { n: i + 1 })}">
     </button>
   `).join('');
 
