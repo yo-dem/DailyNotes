@@ -48,6 +48,14 @@
     <!-- Task Manager (Kanban) -->
     <div id="taskView" class="view">
       <div class="kanban-board" id="kanbanBoard"></div>
+      <div class="task-left-bar">
+        <div class="tk-filter-wrap">
+          <button class="nzb-btn" id="tkFilterBtn" aria-label="Filtra task">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          </button>
+          <span class="tk-filter-dot hidden" id="tkFilterDot"></span>
+        </div>
+      </div>
       <div class="task-tool-bar">
         <button class="nzb-btn" id="tkResetCols" aria-label="Ripristina colonne di default">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg>
@@ -126,6 +134,31 @@
           <label for="tmAssigneeInput"></label><input class="tm-assignee-input" id="tmAssigneeInput" type="text" placeholder="Aggiungi operatore… (Invio)" autocomplete="off" />
         </div>
         <div class="tm-assignee-repo" id="tmAssigneeRepo"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Task Filter -->
+  <div class="modal-overlay hidden" id="taskFilterOverlay">
+    <div class="modal task-filter-modal">
+      <div class="tfm-head">
+        <h2 class="tfm-title">Filtra task</h2>
+        <button class="tfm-close" id="tfmClose" type="button">×</button>
+      </div>
+      <div class="tfm-section">
+        <label class="tfm-label" for="tfmSearch">Titolo</label>
+        <input class="tfm-search" id="tfmSearch" type="text" placeholder="Cerca per titolo…" autocomplete="off" spellcheck="false" />
+      </div>
+      <div class="tfm-section">
+        <label class="tfm-label">Tag</label>
+        <div class="tfm-chips" id="tfmTagChips"></div>
+      </div>
+      <div class="tfm-section">
+        <label class="tfm-label">Utente</label>
+        <div class="tfm-chips" id="tfmAssigneeChips"></div>
+      </div>
+      <div class="tfm-footer">
+        <button class="tfm-clear" id="tfmClear" type="button">Rimuovi filtri</button>
       </div>
     </div>
   </div>

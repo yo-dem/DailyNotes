@@ -641,6 +641,7 @@ body.todo-active .todo-list {
 }
 #todoView.view--active .todo-tool-bar { display: flex; }
 #taskView.view--active .task-tool-bar { display: flex; }
+#taskView.view--active .task-left-bar { display: flex; }
 
 /* ── Shared glass-pill style for all notes bars ── */
 .notes-zoom-bar,
@@ -756,6 +757,18 @@ body.notes-active .notes-nav-bar { bottom: 56px; }
   transform: translateY(-50%) translateX(0);
 }
 
+/* Left task bar: tooltip to the right */
+.task-left-bar .nzb-btn[aria-label]::after {
+  bottom: auto;
+  left: calc(100% + 8px);
+  right: auto;
+  top: 50%;
+  transform: translateY(-50%) translateX(4px);
+}
+.task-left-bar .nzb-btn[aria-label]:hover::after {
+  transform: translateY(-50%) translateX(0);
+}
+
 /* left-side vertical bar: tooltip to the right */
 .notes-right-bar .nzb-btn[aria-label]::after {
   bottom: auto;
@@ -771,6 +784,130 @@ body.notes-active .notes-nav-bar { bottom: 56px; }
 .nzb-btn--active:hover { background: rgba(255,255,255,0.38); }
 .nzb-btn--danger { color: rgba(255,140,140,0.9); }
 .nzb-btn--danger:hover { background: rgba(220,60,60,0.28); color: #ff8a8a; }
+
+/* ── Task left sidebar ── */
+.task-left-bar {
+  position: fixed;
+  left: var(--right-col);
+  top: 50%;
+  transform: translateY(-50%);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.12);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 22px;
+  padding: 10px 8px;
+  z-index: 100;
+  user-select: none;
+  pointer-events: all;
+}
+.tk-filter-wrap { position: relative; }
+.tk-filter-dot {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #FFB74D;
+  border: 1.5px solid rgba(21,101,192,0.6);
+  pointer-events: none;
+}
+.tk-filter-dot.hidden { display: none; }
+
+/* ── Task filter modal ── */
+.task-filter-modal { width: min(360px, 94vw); }
+
+.tfm-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.tfm-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #141428;
+  margin: 0;
+}
+.tfm-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0,0,0,0.07);
+  color: #555;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s;
+  flex-shrink: 0;
+}
+.tfm-close:hover { background: rgba(0,0,0,0.14); }
+.tfm-section { margin-bottom: 16px; }
+.tfm-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgba(20,20,40,0.42);
+  margin-bottom: 8px;
+}
+.tfm-search {
+  width: 100%;
+  background: rgba(0,0,0,0.05);
+  border: 1px solid rgba(0,0,0,0.12);
+  border-radius: 10px;
+  color: #141428;
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 8px 12px;
+  outline: none;
+  box-sizing: border-box;
+}
+.tfm-search:focus { border-color: rgba(0,0,0,0.28); }
+.tfm-search::placeholder { color: rgba(20,20,40,0.32); }
+.tfm-chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; }
+.tfm-chip {
+  padding: 5px 13px;
+  border-radius: 20px;
+  border: 1.5px solid rgba(0,0,0,0.13);
+  background: rgba(0,0,0,0.04);
+  color: rgba(20,20,40,0.6);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  font-family: inherit;
+  user-select: none;
+}
+.tfm-chip:hover { background: rgba(0,0,0,0.09); }
+.tfm-empty {
+  font-size: 0.82rem;
+  color: rgba(20,20,40,0.32);
+  font-style: italic;
+}
+.tfm-footer { margin-top: 6px; display: flex; justify-content: flex-end; }
+.tfm-clear {
+  background: none;
+  border: 1.5px solid rgba(0,0,0,0.14);
+  color: rgba(20,20,40,0.48);
+  border-radius: 10px;
+  padding: 7px 18px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.tfm-clear:hover { background: rgba(0,0,0,0.06); color: #141428; }
 
 .nzb-btn svg {
   width: 16px;

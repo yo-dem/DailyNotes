@@ -73,6 +73,35 @@ let _cardDrag = null;
 let _colDrag  = null;
 let _dblTap   = { cardId: null, time: 0 };
 
+// ── Filter state ─────────────────────────────────────────
+let _filter = { title: '', tags: new Set(), assignees: new Set() };
+
+function _hasFilter() {
+  return !!_filter.title || _filter.tags.size > 0 || _filter.assignees.size > 0;
+}
+
+function _matchesFilter(task) {
+  if (_filter.title) {
+    const q = _filter.title.toLowerCase();
+    if (!(task.title || '').toLowerCase().includes(q)) return false;
+  }
+  if (_filter.tags.size > 0) {
+    const tt = task.tags || [];
+    if (![..._filter.tags].some(tag => tt.includes(tag))) return false;
+  }
+  if (_filter.assignees.size > 0) {
+    const ta = task.assignees || [];
+    if (![..._filter.assignees].some(a => ta.includes(a))) return false;
+  }
+  return true;
+}
+
+function _updateFilterBtn() {
+  const active = _hasFilter();
+  document.getElementById('tkFilterBtn')?.classList.toggle('nzb-btn--active', active);
+  document.getElementById('tkFilterDot')?.classList.toggle('hidden', !active);
+}
+
 function _advanceCard(taskId) {
   const cols  = loadCols();
   const tasks = loadKanban();
@@ -109,9 +138,11 @@ function renderKanban() {
   const $board = document.getElementById('kanbanBoard');
   if (!$board) return;
 
-  const cols  = loadCols();
-  const tasks = loadKanban();
+  const cols     = loadCols();
+  const allTasks = loadKanban();
+  const tasks    = _hasFilter() ? allTasks.filter(_matchesFilter) : allTasks;
   $board.innerHTML = '';
+  _updateFilterBtn();
 
   cols.forEach(col => {
     const colEl = document.createElement('div');
@@ -1039,6 +1070,115 @@ document.getElementById('tkResetCols').addEventListener('click', () => {
     }
   });
 });
+
+// ── Filter modal ─────────────────────────────────────────
+
+function _openFilterModal() {
+  const tags      = loadTags();
+  const assignees = loadAssignees();
+
+  const tagChips = document.getElementById('tfmTagChips');
+  tagChips.innerHTML = '';
+  if (!tags.length) {
+    tagChips.innerHTML = `<span class="tfm-empty">${i18n.t('taskFilterEmpty')}</span>`;
+  } else {
+    tags.forEach(({ name, color }) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'tfm-chip';
+      btn.textContent = name;
+      if (_filter.tags.has(name)) {
+        btn.classList.add('active');
+        btn.style.borderColor = color;
+        btn.style.color = color;
+        btn.style.background = color + '22';
+      }
+      btn.addEventListener('click', () => {
+        if (_filter.tags.has(name)) {
+          _filter.tags.delete(name);
+          btn.classList.remove('active');
+          btn.style.cssText = '';
+        } else {
+          _filter.tags.add(name);
+          btn.classList.add('active');
+          btn.style.borderColor = color;
+          btn.style.color = color;
+          btn.style.background = color + '22';
+        }
+        renderKanban();
+      });
+      tagChips.appendChild(btn);
+    });
+  }
+
+  const assigneeChips = document.getElementById('tfmAssigneeChips');
+  assigneeChips.innerHTML = '';
+  if (!assignees.length) {
+    assigneeChips.innerHTML = `<span class="tfm-empty">${i18n.t('taskFilterEmpty')}</span>`;
+  } else {
+    assignees.forEach(({ name, color }) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'tfm-chip';
+      btn.textContent = name;
+      if (_filter.assignees.has(name)) {
+        btn.classList.add('active');
+        btn.style.borderColor = color;
+        btn.style.color = color;
+        btn.style.background = color + '22';
+      }
+      btn.addEventListener('click', () => {
+        if (_filter.assignees.has(name)) {
+          _filter.assignees.delete(name);
+          btn.classList.remove('active');
+          btn.style.cssText = '';
+        } else {
+          _filter.assignees.add(name);
+          btn.classList.add('active');
+          btn.style.borderColor = color;
+          btn.style.color = color;
+          btn.style.background = color + '22';
+        }
+        renderKanban();
+      });
+      assigneeChips.appendChild(btn);
+    });
+  }
+
+  document.getElementById('tfmSearch').value = _filter.title;
+  document.getElementById('taskFilterOverlay').classList.remove('hidden');
+}
+
+function _closeFilterModal() {
+  document.getElementById('taskFilterOverlay').classList.add('hidden');
+}
+
+(function _initFilterModal() {
+  document.getElementById('tkFilterBtn').addEventListener('click', _openFilterModal);
+  document.getElementById('tfmClose').addEventListener('click', _closeFilterModal);
+
+  document.getElementById('taskFilterOverlay').addEventListener('pointerdown', e => {
+    if (e.target === document.getElementById('taskFilterOverlay')) _closeFilterModal();
+  });
+
+  document.getElementById('tfmSearch').addEventListener('input', e => {
+    _filter.title = e.target.value;
+    renderKanban();
+  });
+
+  document.getElementById('tfmClear').addEventListener('click', () => {
+    _filter = { title: '', tags: new Set(), assignees: new Set() };
+    renderKanban();
+    _openFilterModal();
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape'
+        && !document.getElementById('taskFilterOverlay').classList.contains('hidden')) {
+      _closeFilterModal();
+    }
+  });
+}());
 
 // ── Wire modal (once at boot) ────────────────────────────
 (function _initTaskModal() {
