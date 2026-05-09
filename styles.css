@@ -4,7 +4,14 @@
   padding: 0;
   user-select: none;
   -webkit-user-select: none;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.22) transparent;
 }
+
+::-webkit-scrollbar          { width: 4px; height: 4px; }
+::-webkit-scrollbar-track    { background: transparent; }
+::-webkit-scrollbar-thumb    { background: rgba(255,255,255,0.22); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.42); }
 
 input, textarea {
   user-select: text;
@@ -2466,13 +2473,7 @@ body.task-active {
   overflow-x: auto;
   justify-content: safe center;
   padding: 4px 0 12px;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.22) transparent;
 }
-.kanban-board::-webkit-scrollbar { height: 5px; }
-.kanban-board::-webkit-scrollbar-track { background: transparent; }
-.kanban-board::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.22); border-radius: 99px; }
-.kanban-board::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
 
 /* ── Columns ── */
 .kanban-col {
@@ -2677,13 +2678,7 @@ body.task-active {
   flex-direction: column;
   gap: 8px;
   min-height: 0;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.18) transparent;
 }
-.kanban-cards::-webkit-scrollbar { width: 4px; }
-.kanban-cards::-webkit-scrollbar-track { background: transparent; }
-.kanban-cards::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.22); border-radius: 99px; }
-.kanban-cards::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
 .kanban-cards.drag-over {
   background: rgba(255,255,255,0.06);
 }
