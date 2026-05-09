@@ -142,11 +142,11 @@
   <div class="modal-overlay hidden" id="taskFilterOverlay">
     <div class="modal task-filter-modal">
       <div class="tfm-head">
-        <h2 class="tfm-title">Filtra task</h2>
+        <h2 class="tfm-title" id="tfmTitle">Filtra task</h2>
         <button class="tfm-close" id="tfmClose" type="button">×</button>
       </div>
       <div class="tfm-section">
-        <label class="tfm-label" for="tfmSearch">Titolo</label>
+        <label class="tfm-label" id="tfmLabelTitle" for="tfmSearch">Titolo</label>
         <input class="tfm-search" id="tfmSearch" type="text" placeholder="Cerca per titolo…" autocomplete="off" spellcheck="false" />
       </div>
       <div class="tfm-section">
@@ -154,7 +154,7 @@
         <div class="tfm-chips" id="tfmTagChips"></div>
       </div>
       <div class="tfm-section">
-        <label class="tfm-label">Utente</label>
+        <label class="tfm-label" id="tfmLabelAssignee">Utente</label>
         <div class="tfm-chips" id="tfmAssigneeChips"></div>
       </div>
       <div class="tfm-footer">

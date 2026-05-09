@@ -47,6 +47,18 @@ function _applyLocale() {
   document.getElementById('tdClearAll')  ?.setAttribute('aria-label', i18n.t('confirmClearTodosTitle'));
   document.getElementById('tkResetCols') ?.setAttribute('aria-label', i18n.t('confirmResetColsTitle'));
   document.getElementById('tkClearAll')  ?.setAttribute('aria-label', i18n.t('confirmDeleteTasksTitle'));
+  document.getElementById('tkFilterBtn') ?.setAttribute('aria-label', i18n.t('taskFilter'));
+  // Task filter modal
+  const $tfmTitle         = document.getElementById('tfmTitle');
+  const $tfmLabelTitle    = document.getElementById('tfmLabelTitle');
+  const $tfmSearch        = document.getElementById('tfmSearch');
+  const $tfmLabelAssignee = document.getElementById('tfmLabelAssignee');
+  const $tfmClear         = document.getElementById('tfmClear');
+  if ($tfmTitle)         $tfmTitle.textContent         = i18n.t('taskFilter');
+  if ($tfmLabelTitle)    $tfmLabelTitle.textContent    = i18n.t('taskFilterLabelTitle');
+  if ($tfmSearch)        $tfmSearch.placeholder        = i18n.t('taskFilterPlaceholder');
+  if ($tfmLabelAssignee) $tfmLabelAssignee.textContent = i18n.t('taskFilterLabelAssignee');
+  if ($tfmClear)         $tfmClear.textContent         = i18n.t('taskFilterClear');
   // Modal buttons
   const noteSave = document.getElementById('noteSave');
   if (noteSave) noteSave.textContent = i18n.t('save');

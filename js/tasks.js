@@ -273,9 +273,10 @@ function _buildKanbanCard(task, cols) {
     </div>`;
 
   const cl = task.checklist || [];
+  const clDonePct = cl.length ? Math.round(cl.filter(i => i.done).length / cl.length * 100) : 0;
   const clHtml = cl.length ? `
     <div class="kcard-checklist">
-      <div class="kcard-cl-bar"><div class="kcard-cl-fill"></div></div>
+      <div class="kcard-cl-bar"><div class="kcard-cl-fill" style="width:${clDonePct}%"></div></div>
       ${cl.map(item => `
         <div class="kcard-cl-row${item.done ? ' done' : ''}" data-item-id="${item.id}">
           <span class="kcard-cl-box"></span>
@@ -322,6 +323,26 @@ function _buildKanbanCard(task, cols) {
     });
   });
 
+  if (cl.length) {
+    card.querySelectorAll('.kcard-cl-row').forEach(row => {
+      row.addEventListener('click', e => {
+        e.stopPropagation();
+        const itemId = row.dataset.itemId;
+        const all = loadKanban();
+        const t = all.find(x => x.id === task.id);
+        if (!t) return;
+        const item = (t.checklist || []).find(i => i.id === itemId);
+        if (!item) return;
+        item.done = !item.done;
+        _saveKanban(all);
+        const done = t.checklist.filter(i => i.done).length;
+        const pct = Math.round(done / t.checklist.length * 100);
+        row.classList.toggle('done', item.done);
+        card.querySelector('.kcard-cl-fill').style.width = pct + '%';
+      });
+    });
+  }
+
   // Unified pointer drag: whole card surface
   card.addEventListener('pointerdown', _onCardPointerDown);
 
@@ -335,6 +356,7 @@ function _onCardPointerDown(e) {
   if (e.target.closest('.kcard-del')) return;
   if (e.target.closest('.kcard-advance')) return;
   if (e.target.closest('.kcard-prev')) return;
+  if (e.target.closest('.kcard-cl-row')) return;
   e.preventDefault();
 
   const card   = e.currentTarget;

@@ -2841,10 +2841,9 @@ body.task-active {
   display: flex;
   align-items: center;
   gap: 6px;
-  cursor: default;
+  cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
-  pointer-events: none;
 }
 
 .kcard-cl-box {
