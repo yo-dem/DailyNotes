@@ -466,7 +466,7 @@ body.task-active .fab {
 body.todo-active .main,
 body.task-active .main { padding-top: 54px; padding-bottom: 96px; }
 
-body.task-active .main { padding-left: 12px; padding-right: 12px; max-width: 100%; }
+body.task-active .main { padding-top: 69px; padding-left: 12px; padding-right: 12px; max-width: 100%; min-height: 0; overflow: hidden; }
 
 /* Watermarks hidden in task mode too */
 body.task-active .watermark-day,
@@ -2304,6 +2304,11 @@ body.task-active {
   background-size: 26px 26px;
 }
 
+body.task-active {
+  overflow: hidden;
+  height: 100dvh;
+}
+
 /* ═══════════════════════════════════════════════════════
    KANBAN / TASK MANAGER
    ═══════════════════════════════════════════════════════ */
@@ -2536,6 +2541,10 @@ body.task-active {
   scrollbar-width: thin;
   scrollbar-color: rgba(255,255,255,0.18) transparent;
 }
+.kanban-cards::-webkit-scrollbar { width: 4px; }
+.kanban-cards::-webkit-scrollbar-track { background: transparent; }
+.kanban-cards::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.22); border-radius: 99px; }
+.kanban-cards::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
 .kanban-cards.drag-over {
   background: rgba(255,255,255,0.06);
 }
@@ -2550,7 +2559,8 @@ body.task-active {
   user-select: none;
   cursor: grab;
   position: relative;
-  touch-action: none;
+  touch-action: pan-y;
+  flex-shrink: 0;
 }
 .kcard:active { cursor: grabbing; }
 .kcard:hover {
