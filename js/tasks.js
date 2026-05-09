@@ -360,6 +360,7 @@ function _onCardPointerDown(e) {
   e.preventDefault();
 
   const card   = e.currentTarget;
+  try { card.setPointerCapture(e.pointerId); } catch (_) {}
   const $board = document.getElementById('kanbanBoard');
 
   // Snapshot all columns and their cards
@@ -607,7 +608,10 @@ function _onColPointerDown(e) {
   if (_colDrag || _cardDrag) return;
   e.preventDefault();
 
-  const col    = e.currentTarget.closest('.kanban-col');
+  const grip = e.currentTarget;
+  try { grip.setPointerCapture(e.pointerId); } catch (_) {}
+
+  const col    = grip.closest('.kanban-col');
   const $board = document.getElementById('kanbanBoard');
   const colEls = [...$board.querySelectorAll('.kanban-col')];
 

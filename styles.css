@@ -2454,6 +2454,7 @@ body.task-active {
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  margin-top:20px;
 }
 
 .kanban-board {
@@ -2593,6 +2594,7 @@ body.task-active {
   line-height: 1;
   padding: 2px 0;
   transition: color 0.12s;
+  touch-action: none;
 }
 .kanban-col-grip:hover  { color: rgba(255,255,255,0.7); }
 .kanban-col-grip:active { cursor: grabbing; }
@@ -2688,6 +2690,7 @@ body.task-active {
 
 /* ── Cards ── */
 .kcard {
+  touch-action: none;
   background: #fff;
   border-radius: 12px;
   overflow: hidden;
@@ -2696,7 +2699,6 @@ body.task-active {
   user-select: none;
   cursor: grab;
   position: relative;
-  touch-action: pan-y;
   flex-shrink: 0;
 }
 .kcard:active { cursor: grabbing; }
