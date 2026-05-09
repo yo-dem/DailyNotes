@@ -73,6 +73,30 @@ let _cardDrag = null;
 let _colDrag  = null;
 let _dblTap   = { cardId: null, time: 0 };
 
+function _advanceCard(taskId) {
+  const cols  = loadCols();
+  const tasks = loadKanban();
+  const task  = tasks.find(t => t.id === taskId);
+  if (!task) return;
+  const idx = cols.findIndex(c => c.id === task.col);
+  if (idx < 0 || idx >= cols.length - 1) return;
+  task.col = cols[idx + 1].id;
+  _saveKanban(tasks);
+  renderKanban();
+}
+
+function _prevCard(taskId) {
+  const cols  = loadCols();
+  const tasks = loadKanban();
+  const task  = tasks.find(t => t.id === taskId);
+  if (!task) return;
+  const idx = cols.findIndex(c => c.id === task.col);
+  if (idx <= 0) return;
+  task.col = cols[idx - 1].id;
+  _saveKanban(tasks);
+  renderKanban();
+}
+
 function _addTaskToCol(colId) {
   const all = loadKanban();
   all.push({ id: uid(), col: colId, title: _nextTaskTitle(), body: '', tags: [], color: TASK_COLORS[1] });
@@ -115,7 +139,7 @@ function renderKanban() {
     colEl.appendChild(footer);
 
     tasks.filter(t => t.col === col.id)
-         .forEach(t => cardsEl.appendChild(_buildKanbanCard(t)));
+         .forEach(t => cardsEl.appendChild(_buildKanbanCard(t, cols)));
 
     // Title inline editing
     const titleEl = header.querySelector('.kanban-col-title');
@@ -188,8 +212,11 @@ function renderKanban() {
 }
 
 // ── Card builder ─────────────────────────────────────────
-function _buildKanbanCard(task) {
-  const color = task.color || TASK_COLORS[1];
+function _buildKanbanCard(task, cols) {
+  const color   = task.color || TASK_COLORS[1];
+  const colIdx  = cols.findIndex(c => c.id === task.col);
+  const isFirst = colIdx === 0;
+  const isLast  = colIdx === cols.length - 1;
 
   const card = document.createElement('div');
   card.className  = 'kcard';
@@ -226,8 +253,12 @@ function _buildKanbanCard(task) {
     </div>` : '';
 
   card.innerHTML = `
-    <button class="kcard-del" title="${i18n.t('confirmClearConnBtn')}">×</button>
-    <div class="kcard-stripe" style="background:${color}"></div>
+    <div class="kcard-stripe" style="background:${color}">
+      ${!isFirst ? `<button class="kcard-prev" title="${i18n.t('kanbanPrev')}">‹</button>` : ''}
+      <span class="kcard-stripe-gap"></span>
+      ${!isLast ? `<button class="kcard-advance" title="${i18n.t('kanbanAdvance')}">›</button>` : ''}
+      <button class="kcard-del" title="${i18n.t('confirmClearConnBtn')}">×</button>
+    </div>
     <div class="kcard-content">
       <div class="kcard-title">${escHtml(task.title || i18n.t('kanbanTaskNoTitle'))}</div>
       ${tagsHtml ? `<div class="kcard-tags">${tagsHtml}</div>` : ''}
@@ -236,6 +267,19 @@ function _buildKanbanCard(task) {
     ${clHtml}
     ${footerHtml}
   `;
+
+  if (!isFirst) {
+    card.querySelector('.kcard-prev').addEventListener('click', e => {
+      e.stopPropagation();
+      _prevCard(task.id);
+    });
+  }
+  if (!isLast) {
+    card.querySelector('.kcard-advance').addEventListener('click', e => {
+      e.stopPropagation();
+      _advanceCard(task.id);
+    });
+  }
 
   card.querySelector('.kcard-del').addEventListener('click', e => {
     e.stopPropagation();
@@ -258,6 +302,8 @@ function _onCardPointerDown(e) {
   if (e.button !== 0) return;
   if (_cardDrag || _colDrag) return;
   if (e.target.closest('.kcard-del')) return;
+  if (e.target.closest('.kcard-advance')) return;
+  if (e.target.closest('.kcard-prev')) return;
   e.preventDefault();
 
   const card   = e.currentTarget;
